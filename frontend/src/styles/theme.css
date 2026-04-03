@@ -1,0 +1,93 @@
+:root {
+  --hr-bg: #edf3ee;
+  --hr-surface: rgba(251, 248, 241, 0.92);
+  --hr-surface-strong: #faf7ef;
+  --hr-line: rgba(27, 67, 50, 0.1);
+  --hr-text: #13231a;
+  --hr-text-soft: #6b7280;
+  --hr-primary: #2d6a4f;
+  --hr-primary-dark: #1b4332;
+  --hr-gold: #d7c28b;
+}
+
+html,
+body,
+#app {
+  background: var(--hr-bg);
+  color: var(--hr-text);
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+.el-card {
+  border: 1px solid var(--hr-line) !important;
+  border-radius: 24px !important;
+  background: var(--hr-surface) !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 32, 0.08) !important;
+}
+
+.el-card__header {
+  border-bottom: 1px solid rgba(27, 67, 50, 0.08) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.04));
+}
+
+.el-table {
+  --el-table-border-color: rgba(27, 67, 50, 0.1);
+  --el-table-header-bg-color: rgba(216, 239, 227, 0.55);
+  --el-table-row-hover-bg-color: rgba(215, 194, 139, 0.16);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  color: #264334;
+  font-weight: 700;
+}
+
+.el-dialog {
+  border-radius: 26px !important;
+  overflow: hidden;
+  background: var(--hr-surface-strong) !important;
+  box-shadow: 0 28px 60px rgba(15, 23, 32, 0.22) !important;
+}
+
+.el-dialog__header {
+  margin-right: 0 !important;
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid rgba(27, 67, 50, 0.08);
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  border-radius: 14px !important;
+  box-shadow: 0 0 0 1px rgba(19, 35, 26, 0.08) inset !important;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--hr-primary) !important;
+  --el-button-border-color: var(--hr-primary) !important;
+  --el-button-hover-bg-color: var(--hr-primary-dark) !important;
+  --el-button-hover-border-color: var(--hr-primary-dark) !important;
+  --el-button-active-bg-color: var(--hr-primary-dark) !important;
+  --el-button-active-border-color: var(--hr-primary-dark) !important;
+}
+
+.el-button {
+  border-radius: 12px !important;
+}
+
+.el-pagination {
+  --el-pagination-button-bg-color: rgba(255, 255, 255, 0.85);
+  --el-pagination-hover-color: var(--hr-primary);
+}
+
+.el-pagination.is-background .el-pager li.is-active {
+  background: var(--hr-primary) !important;
+}
+
+.el-descriptions {
+  --el-descriptions-table-border: rgba(27, 67, 50, 0.1);
+}

@@ -1,0 +1,86 @@
+
+> hrms-frontend@1.0.0 dev
+> vite --host 0.0.0.0
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m842[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://26.240.240.77:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.56.1:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.137.1:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.20.10.2:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.123.21:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.216.29:[1m5173[22m/[39m
+[2m08:38:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Approvals.vue[22m
+[2m08:39:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Approvals.vue[22m
+[2m08:44:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Assets.vue[22m
+[2m08:50:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Assets.vue[22m
+[2m08:51:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Assets.vue[22m
+[2m08:51:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Approvals.vue[22m
+[2m08:51:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Approvals.vue[22m
+[2m09:24:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/attendance/Leaves.vue[22m
+[2m09:25:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/attendance/Leaves.vue[22m
+[2m09:41:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Assets.vue[22m
+[2m10:01:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Assets.vue[22m
+[2m10:26:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/salary/Cities.vue[22m
+[2m10:27:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/salary/Records.vue[22m
+[2m10:41:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/system/Employees.vue[22m
+[2m11:34:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue, /src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m11:37:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m11:40:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/layouts/MainLayout.vue, /src/layouts/MainLayout.vue?vue&type=style&index=0&scoped=22686b16&lang.css[22m
+[2m11:41:24[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.ts[22m
+[2m13:27:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m13:31:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m13:35:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Expenses.vue[22m
+[2m13:42:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/attendance/Leaves.vue[22m
+[2m13:43:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/attendance/Records.vue[22m
+[2m13:54:20[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/router/index.ts[22m
+[2m13:56:41[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/views/recruitment/Candidates.vue[22m
+[2m14:20:19[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/router/index.ts[22m
+[2m14:20:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Candidates.vue, /src/views/recruitment/Candidates.vue?vue&type=style&index=0&scoped=35225276&lang.css[22m
+[2m14:21:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Candidates.vue, /src/views/recruitment/Candidates.vue?vue&type=style&index=0&scoped=35225276&lang.css[22m
+[2m14:28:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Positions.vue, /src/views/recruitment/Positions.vue?vue&type=style&index=0&scoped=20378b62&lang.css[22m
+[2m14:29:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Positions.vue, /src/views/recruitment/Positions.vue?vue&type=style&index=0&scoped=20378b62&lang.css[22m
+[2m14:29:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Candidates.vue, /src/views/recruitment/Candidates.vue?vue&type=style&index=0&scoped=35225276&lang.css[22m
+[2m14:34:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Positions.vue, /src/views/recruitment/Positions.vue?vue&type=style&index=0&scoped=20378b62&lang.css[22m
+[2m14:34:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Candidates.vue[22m
+[2m14:41:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Candidates.vue[22m
+[2m14:53:05[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/router/index.ts[22m
+[2m14:53:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/layouts/MainLayout.vue[22m
+[2m14:54:57[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/views/care/Plans.vue[22m
+[2m15:01:28[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m15:01:37[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m15:10:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/system/Employees.vue, /src/views/system/Employees.vue?vue&type=style&index=0&scoped=9a2d277e&lang.css[22m
+[2m15:11:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/system/Employees.vue, /src/views/system/Employees.vue?vue&type=style&index=0&scoped=9a2d277e&lang.css[22m
+[2m15:11:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Home.vue, /src/views/Home.vue?vue&type=style&index=0&scoped=2dc54a20&lang.css[22m
+[2m15:11:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Home.vue, /src/views/Home.vue?vue&type=style&index=0&scoped=2dc54a20&lang.css[22m
+[2m15:26:10[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/router/index.ts[22m
+[2m15:26:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/care/Plans.vue, /src/views/care/Plans.vue?vue&type=style&index=0&scoped=839e785e&lang.css[22m
+[2m15:27:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/care/Plans.vue, /src/views/care/Plans.vue?vue&type=style&index=0&scoped=839e785e&lang.css[22m
+[2m15:30:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/care/Plans.vue, /src/views/care/Plans.vue?vue&type=style&index=0&scoped=839e785e&lang.css[22m
+[2m15:44:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/system/Employees.vue[22m
+[2m16:00:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m16:02:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m16:02:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m16:02:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m16:06:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue[22m
+[2m16:09:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m16:10:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:12:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/layouts/MainLayout.vue?vue&type=style&index=0&scoped=22686b16&lang.css, /src/layouts/MainLayout.vue[22m
+[2m16:13:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:16:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m16:17:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:18:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:19:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:20:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:21:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:22:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:23:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m16:25:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m16:25:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m16:27:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css[22m
+[2m16:29:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/Login.vue?vue&type=style&index=0&scoped=08aaad4e&lang.css, /src/views/Login.vue[22m
+[2m16:38:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Expenses.vue, /src/views/finance/Expenses.vue?vue&type=style&index=0&scoped=ffe5b5d9&lang.css[22m
+[2m16:41:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/finance/Expenses.vue[22m
+[2m17:14:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/views/recruitment/Requirements.vue, /src/views/recruitment/Requirements.vue?vue&type=style&index=0&scoped=6da82615&lang.css[22m
