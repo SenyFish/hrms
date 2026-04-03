@@ -1,47 +1,53 @@
 <template>
-  <el-card>
-    <template #header>
-      <span>五险一金与工资</span>
-      <div v-if="canEdit" class="header-actions">
-        <el-input v-model="month" placeholder="yyyy-MM" style="width: 120px" />
-        <el-button @click="load">查询</el-button>
-        <el-button type="success" @click="exportXlsx">导出月报表</el-button>
-        <el-button type="primary" @click="open()">新增</el-button>
-      </div>
-    </template>
+  <div class="app-page">
+    <PageSection
+      eyebrow="Payroll"
+      title="五险一金与工资"
+      :description="canEdit ? '按月份查看工资记录、导出报表并维护参保数据。' : '查看个人工资与五险一金明细。'"
+      flush
+    >
+      <FilterToolbar>
+        <el-input v-if="canEdit" v-model="month" class="page-field page-field--month" placeholder="YYYY-MM" />
+        <el-button v-if="canEdit" @click="load">查询</el-button>
 
-    <el-table v-loading="loading" :data="rows" border>
-      <el-table-column prop="user.realName" label="员工" />
-      <el-table-column prop="salaryMonth" label="月份" width="100" />
-      <el-table-column prop="baseSalary" label="基本工资" width="110" />
-      <el-table-column prop="socialSecurityBase" label="社保基数" width="110" />
-      <el-table-column prop="housingFundBase" label="公积金基数" width="120" />
-      <el-table-column label="养老个人" width="100">
-        <template #default="{ row }">{{ amount(row.pensionPersonal) }}</template>
-      </el-table-column>
-      <el-table-column label="公积金个人" width="110">
-        <template #default="{ row }">{{ amount(row.housingFundPersonal) }}</template>
-      </el-table-column>
-      <el-table-column label="参保城市" width="140">
-        <template #default="{ row }">{{ row.insuredCity?.name || "-" }}</template>
-      </el-table-column>
-      <el-table-column v-if="canEdit" label="操作" width="120">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="open(row)">编辑</el-button>
+        <template #actions>
+          <template v-if="canEdit">
+            <el-button type="success" @click="exportXlsx">导出月报表</el-button>
+            <button class="frappe-button" data-variant="solid" type="button" @click="open()">新增</button>
+          </template>
         </template>
-      </el-table-column>
-    </el-table>
+      </FilterToolbar>
 
-    <el-dialog v-model="visible" title="薪资与五险一金" width="720px">
+      <div class="app-table">
+        <el-table v-loading="loading" :data="rows" border>
+          <el-table-column prop="user.realName" label="员工" />
+          <el-table-column prop="salaryMonth" label="月份" width="110" />
+          <el-table-column prop="baseSalary" label="基本工资" width="120" />
+          <el-table-column prop="socialSecurityBase" label="社保基数" width="120" />
+          <el-table-column prop="housingFundBase" label="公积金基数" width="130" />
+          <el-table-column label="养老个人" width="110">
+            <template #default="{ row }">{{ amount(row.pensionPersonal) }}</template>
+          </el-table-column>
+          <el-table-column label="公积金个人" width="120">
+            <template #default="{ row }">{{ amount(row.housingFundPersonal) }}</template>
+          </el-table-column>
+          <el-table-column label="参保城市" width="150">
+            <template #default="{ row }">{{ row.insuredCity?.name || "-" }}</template>
+          </el-table-column>
+          <el-table-column v-if="canEdit" label="操作" width="120">
+            <template #default="{ row }">
+              <el-button type="primary" link @click="open(row)">编辑</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </PageSection>
+
+    <el-dialog v-model="visible" title="薪资与五险一金" width="760px">
       <el-form :model="form" label-width="120px">
         <el-form-item v-if="canEdit" label="员工">
           <el-select v-model="form.userId" filterable style="width: 100%">
-            <el-option
-              v-for="u in userList"
-              :key="u.id"
-              :label="`${u.realName} ${u.employeeNo}`"
-              :value="u.id"
-            />
+            <el-option v-for="u in userList" :key="u.id" :label="`${u.realName} ${u.employeeNo}`" :value="u.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="月份">
@@ -61,7 +67,7 @@
         <el-form-item label="公积金基数">
           <el-input-number v-model="form.housingFundBase" :min="0" :step="100" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="规则说明" v-if="selectedCity">
+        <el-form-item v-if="selectedCity" label="规则说明">
           <el-descriptions :column="2" border size="small" style="width: 100%">
             <el-descriptions-item label="养老(个/企)">{{ percent(selectedCity.pensionPersonalRate) }} / {{ percent(selectedCity.pensionCompanyRate) }}</el-descriptions-item>
             <el-descriptions-item label="医疗(个/企)">{{ percent(selectedCity.medicalPersonalRate) }} / {{ percent(selectedCity.medicalCompanyRate) }}</el-descriptions-item>
@@ -94,7 +100,7 @@
         <el-button type="primary" @click="save">保存</el-button>
       </template>
     </el-dialog>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -102,6 +108,8 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
+import FilterToolbar from "@/components/ui/FilterToolbar.vue";
+import PageSection from "@/components/ui/PageSection.vue";
 
 type SalaryRow = {
   id?: number;
@@ -145,9 +153,7 @@ const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 function getCurrentMonth(): string {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function isValidMonth(value: string): boolean {
@@ -161,7 +167,6 @@ function calc(base: number, rate?: number | string) {
 const store = useUserStore();
 const roleCode = computed(() => store.profile?.roleCode as string);
 const canEdit = computed(() => roleCode.value === "ADMIN" || roleCode.value === "HR");
-
 const month = ref(getCurrentMonth());
 const rows = ref<SalaryRow[]>([]);
 const userList = ref<SimpleUser[]>([]);
@@ -248,10 +253,9 @@ async function load() {
       rows.value = salaryRows as SalaryRow[];
       userList.value = users as SimpleUser[];
       cities.value = cityList as CityRule[];
-      return;
+    } else {
+      rows.value = (await http.get("/salary/records/my")) as SalaryRow[];
     }
-
-    rows.value = (await http.get("/salary/records/my")) as SalaryRow[];
   } catch (error: unknown) {
     rows.value = [];
     ElMessage.error(error instanceof Error ? error.message : "薪资数据加载失败");
@@ -331,9 +335,11 @@ onMounted(load);
 </script>
 
 <style scoped>
-.header-actions {
-  float: right;
-  display: flex;
-  gap: 8px;
+.page-field {
+  min-width: 180px;
+}
+
+.page-field--month {
+  width: 120px;
 }
 </style>

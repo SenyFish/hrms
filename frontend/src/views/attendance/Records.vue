@@ -1,89 +1,88 @@
 <template>
-  <el-card>
-    <template #header>
-      <div class="header-bar">
-        <span>考勤记录与统计</span>
-        <div class="header-actions">
+  <div class="app-page">
+    <PageSection
+      eyebrow="Attendance"
+      title="考勤记录与统计"
+      :description="isHr ? '按时间范围查看全量打卡记录，并处理导入导出。' : '查看个人打卡记录并快速完成上下班打卡。'"
+      flush
+    >
+      <FilterToolbar>
+        <el-date-picker v-model="range" type="daterange" value-format="YYYY-MM-DD" />
+        <el-input
+          v-model="query.keyword"
+          class="page-field"
+          :placeholder="isHr ? '搜索员工或状态' : '搜索状态'"
+        />
+        <el-button type="primary" @click="search">查询</el-button>
+        <el-button @click="resetSearch">重置</el-button>
+
+        <template #actions>
           <template v-if="isHr">
-            <el-date-picker v-model="range" type="daterange" value-format="YYYY-MM-DD" />
-            <el-input
-              v-model="query.keyword"
-              placeholder="请输入员工或状态关键字"
-              clearable
-              style="width: 240px"
-              @keyup.enter="search"
-            />
-            <el-button @click="search">查询</el-button>
-            <el-button @click="resetSearch">重置</el-button>
-            <el-button type="success" @click="exportXlsx">导出月报表</el-button>
+            <el-button type="success" @click="exportXlsx">导出月报</el-button>
             <el-upload :show-file-list="false" accept=".csv" :http-request="doImport" style="display: inline-block">
               <el-button type="warning">导入 CSV</el-button>
             </el-upload>
           </template>
           <template v-else>
-            <el-input
-              v-model="query.keyword"
-              placeholder="请输入状态关键字"
-              clearable
-              style="width: 220px"
-              @keyup.enter="search"
-            />
-            <el-button @click="search">查询</el-button>
-            <el-button @click="resetSearch">重置</el-button>
-            <el-button type="primary" @click="clock('IN')">上班打卡</el-button>
-            <el-button type="success" @click="clock('OUT')">下班打卡</el-button>
+            <button class="frappe-button" data-variant="solid" type="button" @click="clock('IN')">上班打卡</button>
+            <button class="frappe-button" data-variant="outline" type="button" @click="clock('OUT')">下班打卡</button>
           </template>
-        </div>
+        </template>
+      </FilterToolbar>
+
+      <div class="app-table">
+        <el-table :data="rows" border>
+          <el-table-column v-if="isHr" prop="user.realName" label="员工" width="120" />
+          <el-table-column prop="attDate" label="日期" width="130" />
+          <el-table-column label="上班" width="180">
+            <template #default="{ row }">{{ fmt(row.clockIn) }}</template>
+          </el-table-column>
+          <el-table-column label="下班" width="180">
+            <template #default="{ row }">{{ fmt(row.clockOut) }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="120">
+            <template #default="{ row }">
+              <span class="pill-tag" :class="statusClass(String(row.status || ''))">{{ row.status }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
-    </template>
 
-    <el-table :data="rows" border>
-      <el-table-column prop="user.realName" label="员工" v-if="isHr" />
-      <el-table-column prop="attDate" label="日期" width="120" />
-      <el-table-column label="上班" width="170">
-        <template #default="{ row }">{{ fmt(row.clockIn) }}</template>
-      </el-table-column>
-      <el-table-column label="下班" width="170">
-        <template #default="{ row }">{{ fmt(row.clockOut) }}</template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" width="110" />
-    </el-table>
-
-    <div class="pager">
-      <el-pagination
-        v-model:current-page="query.page"
-        v-model:page-size="query.size"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        @current-change="load"
-        @size-change="handleSizeChange"
-      />
-    </div>
-  </el-card>
+      <div class="page-pager">
+        <el-pagination
+          v-model:current-page="query.page"
+          v-model:page-size="query.size"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          @current-change="load"
+          @size-change="handleSizeChange"
+        />
+      </div>
+    </PageSection>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, reactive } from "vue";
-import http from "@/api/http";
-import { useUserStore } from "@/stores/user";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
+import http from "@/api/http";
+import { useUserStore } from "@/stores/user";
 import { downloadByFetch } from "@/utils/download";
+import FilterToolbar from "@/components/ui/FilterToolbar.vue";
+import PageSection from "@/components/ui/PageSection.vue";
 
 type AttendanceRow = Record<string, unknown>;
 type AttendanceListResponse = {
   list: AttendanceRow[];
   total: number;
-  page: number;
-  size: number;
 };
 
 const store = useUserStore();
 const roleCode = computed(() => store.profile?.roleCode as string);
 const isHr = computed(() => roleCode.value === "ADMIN" || roleCode.value === "HR");
-
 const range = ref<[string, string] | null>(null);
 const rows = ref<AttendanceRow[]>([]);
 const total = ref(0);
@@ -98,12 +97,17 @@ function fmt(v: unknown) {
   return new Date(v as string).toLocaleString("zh-CN");
 }
 
+function statusClass(status: string) {
+  if (status.includes("正常")) return "pill-tag--success";
+  if (status.includes("迟到") || status.includes("早退")) return "pill-tag--warning";
+  if (status.includes("缺勤")) return "pill-tag--danger";
+  return "pill-tag--neutral";
+}
+
 async function load() {
-  const from = range.value?.[0];
-  const to = range.value?.[1];
   const params = {
-    from,
-    to,
+    from: range.value?.[0],
+    to: range.value?.[1],
     keyword: query.keyword || undefined,
     page: query.page,
     size: query.size,
@@ -152,11 +156,7 @@ async function exportXlsx() {
     return;
   }
   try {
-    await downloadByFetch(
-      `/api/attendance/export?from=${from}&to=${to}`,
-      { headers: { Authorization: `Bearer ${store.token}` } },
-      `attendance-${from}-${to}.xlsx`
-    );
+    await downloadByFetch(`/api/attendance/export?from=${from}&to=${to}`, { headers: { Authorization: `Bearer ${store.token}` } }, `attendance-${from}-${to}.xlsx`);
   } catch (error: unknown) {
     ElMessage.error(error instanceof Error ? error.message : "导出失败");
   }
@@ -184,23 +184,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.page-field {
+  min-width: 220px;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pager {
+.page-pager {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 </style>

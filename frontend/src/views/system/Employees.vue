@@ -1,70 +1,74 @@
 <template>
-  <el-card>
-    <template #header>
-      <div class="header-bar">
-        <span>员工管理（角色分配）</span>
-        <el-button type="primary" @click="open()">新增</el-button>
+  <div class="app-page">
+    <PageSection
+      eyebrow="System"
+      title="员工管理"
+      description="管理员工账号、角色、部门以及基础档案。首轮重构只替换界面层，保留现有用户接口和字段。"
+      flush
+    >
+      <template #actions>
+        <button class="frappe-button" data-variant="solid" type="button" @click="open()">新增员工</button>
+      </template>
+
+      <FilterToolbar>
+        <el-input v-model="query.keyword" class="page-field page-field--wide" placeholder="搜索账号、姓名、工号或手机号" />
+        <el-button type="primary" @click="search">查询</el-button>
+        <el-button @click="resetSearch">重置</el-button>
+      </FilterToolbar>
+
+      <div class="app-table">
+        <el-table :data="users" border>
+          <el-table-column prop="username" label="账号" width="140" />
+          <el-table-column prop="realName" label="姓名" width="120" />
+          <el-table-column prop="employeeNo" label="工号" width="130" />
+          <el-table-column label="角色" width="140">
+            <template #default="{ row }">{{ row.role?.name || "-" }}</template>
+          </el-table-column>
+          <el-table-column prop="departmentId" label="部门 ID" width="100" />
+          <el-table-column prop="phone" label="手机号" width="150" />
+          <el-table-column label="生日" width="130">
+            <template #default="{ row }">{{ row.birthday || "-" }}</template>
+          </el-table-column>
+          <el-table-column label="入职日期" width="130">
+            <template #default="{ row }">{{ row.hireDate || "-" }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="160" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link @click="open(row)">编辑</el-button>
+              <el-button type="danger" link @click="remove(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
-    </template>
 
-    <div class="toolbar">
-      <el-input
-        v-model="query.keyword"
-        placeholder="请输入账号、姓名、工号、手机号等关键字"
-        clearable
-        style="width: 320px"
-        @keyup.enter="search"
-      />
-      <el-button type="primary" @click="search">查询</el-button>
-      <el-button @click="resetSearch">重置</el-button>
-    </div>
+      <div class="page-pager">
+        <el-pagination
+          v-model:current-page="query.page"
+          v-model:page-size="query.size"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          @current-change="loadUsers"
+          @size-change="handleSizeChange"
+        />
+      </div>
+    </PageSection>
 
-    <el-table :data="users" border>
-      <el-table-column prop="username" label="账号" width="120" />
-      <el-table-column prop="realName" label="姓名" width="100" />
-      <el-table-column prop="employeeNo" label="工号" width="120" />
-      <el-table-column label="角色" width="120">
-        <template #default="{ row }">{{ row.role?.name || "-" }}</template>
-      </el-table-column>
-      <el-table-column prop="departmentId" label="部门ID" width="90" />
-      <el-table-column prop="phone" label="手机号" width="130" />
-      <el-table-column label="生日" width="120">
-        <template #default="{ row }">{{ row.birthday || "-" }}</template>
-      </el-table-column>
-      <el-table-column label="入职日期" width="120">
-        <template #default="{ row }">{{ row.hireDate || "-" }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="160" fixed="right">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="open(row)">编辑</el-button>
-          <el-button type="danger" link @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <div class="pager">
-      <el-pagination
-        v-model:current-page="query.page"
-        v-model:page-size="query.size"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        @current-change="loadUsers"
-        @size-change="handleSizeChange"
-      />
-    </div>
-
-    <el-dialog v-model="visible" :title="form.id ? '编辑员工' : '新增员工'" width="560px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑员工' : '新增员工'" width="620px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item v-if="!form.id" label="用户名" prop="username">
           <el-input v-model="form.username" />
         </el-form-item>
-        <el-form-item :label="form.id ? '密码（可选）' : '密码'" prop="password">
-          <el-input v-model="form.password" type="password" show-password :placeholder="form.id ? '留空不修改' : '请输入初始密码'" />
+        <el-form-item :label="form.id ? '密码(可选)' : '密码'" prop="password">
+          <el-input v-model="form.password" type="password" show-password :placeholder="form.id ? '留空表示不修改' : '请输入初始密码'" />
         </el-form-item>
-        <el-form-item label="姓名" prop="realName"><el-input v-model="form.realName" /></el-form-item>
-        <el-form-item label="工号"><el-input v-model="form.employeeNo" /></el-form-item>
+        <el-form-item label="姓名" prop="realName">
+          <el-input v-model="form.realName" />
+        </el-form-item>
+        <el-form-item label="工号">
+          <el-input v-model="form.employeeNo" />
+        </el-form-item>
         <el-form-item label="部门" prop="departmentId">
           <el-select v-model="form.departmentId" placeholder="选择部门" style="width: 100%">
             <el-option v-for="d in depts" :key="d.id" :label="d.name" :value="d.id" />
@@ -75,8 +79,12 @@
             <el-option v-for="r in roles" :key="r.id" :label="r.name" :value="r.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="手机"><el-input v-model="form.phone" /></el-form-item>
-        <el-form-item label="邮箱"><el-input v-model="form.email" /></el-form-item>
+        <el-form-item label="手机">
+          <el-input v-model="form.phone" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="form.email" />
+        </el-form-item>
         <el-form-item label="生日">
           <el-date-picker v-model="form.birthday" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
@@ -89,14 +97,16 @@
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import http from "@/api/http";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { FormInstance, FormRules } from "element-plus";
+import http from "@/api/http";
+import FilterToolbar from "@/components/ui/FilterToolbar.vue";
+import PageSection from "@/components/ui/PageSection.vue";
 
 type UserRow = {
   id?: number;
@@ -234,18 +244,9 @@ async function save() {
     await formRef.value.validate();
     saving.value = true;
     const payload = { ...form };
-    let savedUser: UserRow;
-    if (form.id) {
-      savedUser = (await http.put(`/users/${form.id}`, payload)) as UserRow;
-    } else {
-      savedUser = (await http.post("/users", payload)) as UserRow;
-    }
+    const savedUser = (form.id ? await http.put(`/users/${form.id}`, payload) : await http.post("/users", payload)) as UserRow;
 
-    const expectedBirthday = form.birthday || "";
-    const expectedHireDate = form.hireDate || "";
-    const actualBirthday = savedUser.birthday || "";
-    const actualHireDate = savedUser.hireDate || "";
-    if (actualBirthday !== expectedBirthday || actualHireDate !== expectedHireDate) {
+    if ((savedUser.birthday || "") !== (form.birthday || "") || (savedUser.hireDate || "") !== (form.hireDate || "")) {
       throw new Error("员工日期信息未成功更新，请重试");
     }
 
@@ -253,13 +254,7 @@ async function save() {
     visible.value = false;
     await loadUsers();
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      ElMessage.error(error.message);
-    } else if (typeof error === "string") {
-      ElMessage.error(error);
-    } else {
-      ElMessage.error("保存失败");
-    }
+    ElMessage.error(error instanceof Error ? error.message : "保存失败");
   } finally {
     saving.value = false;
   }
@@ -281,21 +276,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.page-field {
+  min-width: 220px;
 }
 
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+.page-field--wide {
+  width: 320px;
 }
 
-.pager {
+.page-pager {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 </style>

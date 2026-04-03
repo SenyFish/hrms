@@ -1,86 +1,119 @@
 <template>
-  <el-container class="layout">
-    <el-aside width="236px" class="aside">
-      <div class="logo-wrap">
-        <div class="logo-badge" aria-label="系统图标">
-          <img src="/favicon.svg" alt="系统图标" class="logo-badge-icon" />
+  <div class="shell">
+    <aside class="shell__aside">
+      <div class="shell__brand">
+        <div class="shell__brand-badge">
+          <img src="/favicon.svg" alt="HRMS" class="shell__brand-icon" />
         </div>
-        <div class="logo-copy">
-          <strong>人力资源管理系统</strong>
-          <span>Human Resource Platform</span>
+        <div>
+          <strong class="shell__brand-title">HRMS Console</strong>
+          <p class="shell__brand-copy">Frappe-style workspace for the current Spring backend</p>
         </div>
       </div>
 
-      <el-menu
-        :default-active="route.path"
-        router
-        class="menu"
-        background-color="transparent"
-        text-color="rgba(246,243,234,0.78)"
-        active-text-color="#f6f3ea"
-      >
-        <template v-for="m in topMenus" :key="m.id">
-          <el-sub-menu v-if="childrenOf(m.id).length" :index="String(m.id)">
-            <template #title>
-              <el-icon><component :is="iconMap(m.icon)" /></el-icon>
-              <span>{{ m.title }}</span>
-            </template>
-            <el-menu-item v-for="c in childrenOf(m.id)" :key="c.id" :index="c.path">
-              {{ c.title }}
-            </el-menu-item>
-          </el-sub-menu>
-          <el-menu-item v-else :index="m.path">
-            <el-icon><component :is="iconMap(m.icon)" /></el-icon>
-            <span>{{ m.title }}</span>
-          </el-menu-item>
-        </template>
-      </el-menu>
-    </el-aside>
+      <div class="shell__nav-copy">
+        <p class="shell__nav-kicker">{{ currentMeta.sectionEn }}</p>
+        <h2>{{ currentMeta.section }}</h2>
+        <p>{{ currentMeta.description }}</p>
+      </div>
 
-    <el-container class="content-shell">
-      <el-header class="header">
-        <div>
-          <p class="header-kicker">组织管理工作台</p>
-          <span class="title">{{ pageTitle }}</span>
+      <nav class="shell__nav">
+        <section v-for="group in menuGroups" :key="group.id" class="shell__nav-group">
+          <header class="shell__nav-group-title">
+            <component :is="iconMap(group.icon)" />
+            <span>{{ group.title }}</span>
+          </header>
+          <router-link
+            v-for="item in group.children"
+            :key="item.id"
+            :to="item.path"
+            class="shell__nav-link"
+            :class="{ 'is-active': route.path === item.path }"
+          >
+            <span>{{ item.title }}</span>
+            <small>{{ shortPath(item.path) }}</small>
+          </router-link>
+          <router-link
+            v-if="!group.children.length && group.path"
+            :to="group.path"
+            class="shell__nav-link"
+            :class="{ 'is-active': route.path === group.path }"
+          >
+            <span>{{ group.title }}</span>
+            <small>{{ shortPath(group.path) }}</small>
+          </router-link>
+        </section>
+      </nav>
+    </aside>
+
+    <main class="shell__content">
+      <header class="shell__topbar">
+        <div class="shell__topbar-copy">
+          <p class="shell__topbar-kicker">{{ currentMeta.section }} / {{ currentMeta.sectionEn }}</p>
+          <h1>{{ pageTitle }}</h1>
         </div>
-        <div class="right">
-          <div class="user-chip">
-            <span class="user-label">当前用户</span>
-            <strong class="name">{{ displayName }}</strong>
+
+        <div class="shell__topbar-actions">
+          <div class="shell__identity">
+            <span class="shell__identity-label">当前用户</span>
+            <strong>{{ displayName }}</strong>
           </div>
-          <el-button type="primary" class="logout-btn" @click="logout">退出登录</el-button>
+          <button class="frappe-button" data-variant="outline" type="button" @click="logout">退出登录</button>
         </div>
-      </el-header>
+      </header>
 
-      <el-main class="main">
+      <section class="app-page">
+        <div class="page-hero" :class="accentClass">
+          <div class="page-hero__content">
+            <p class="page-hero__eyebrow">{{ currentMeta.section }} / {{ currentMeta.sectionEn }}</p>
+            <h2 class="page-hero__title">{{ pageTitle }}</h2>
+            <p class="page-hero__description">{{ currentMeta.description }}</p>
+          </div>
+          <div class="page-hero__metrics">
+            <div class="page-pill">
+              <span class="page-pill__label">Route</span>
+              <span class="page-pill__value">{{ route.path }}</span>
+            </div>
+            <div class="page-pill">
+              <span class="page-pill__label">Role</span>
+              <span class="page-pill__value">{{ displayRole }}</span>
+            </div>
+          </div>
+        </div>
+
         <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+      </section>
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import http from "@/api/http";
-import { useUserStore } from "@/stores/user";
+import { useUserStore, type MenuItem } from "@/stores/user";
+import { accentClassMap, menuMeta } from "@/config/navigation";
 import {
+  Avatar,
+  Calendar,
+  Clock,
+  Collection,
+  DataAnalysis,
+  Document,
+  Files,
   HomeFilled,
-  Setting,
+  Location,
   Lock,
   Money,
-  Clock,
-  Folder,
-  User,
   OfficeBuilding,
-  Avatar,
-  Menu,
-  Document,
-  Location,
-  Calendar,
-  List,
-  DataAnalysis,
+  Setting,
+  User,
 } from "@element-plus/icons-vue";
+
+type MenuNode = MenuItem & {
+  sortOrder?: number;
+  children: MenuItem[];
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -88,11 +121,18 @@ const store = useUserStore();
 
 const menus = computed(() => store.menus || []);
 
-const topMenus = computed(() => menus.value.filter((m) => m.parentId == null || m.parentId === 0));
+const menuGroups = computed<MenuNode[]>(() => {
+  const roots = menus.value
+    .filter((item) => item.parentId == null || item.parentId === 0)
+    .sort((a, b) => ((a as MenuNode).sortOrder || 0) - ((b as MenuNode).sortOrder || 0));
 
-function childrenOf(pid: number) {
-  return menus.value.filter((x) => x.parentId === pid).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-}
+  return roots.map((root) => ({
+    ...(root as MenuNode),
+    children: menus.value
+      .filter((item) => item.parentId === root.id)
+      .sort((a, b) => ((a as MenuNode).sortOrder || 0) - ((b as MenuNode).sortOrder || 0)),
+  }));
+});
 
 function iconMap(name?: string) {
   const map: Record<string, unknown> = {
@@ -101,32 +141,48 @@ function iconMap(name?: string) {
     Lock,
     Money,
     Clock,
-    Folder,
+    Files,
     User,
     OfficeBuilding,
     Avatar,
-    Menu,
+    Collection,
     Document,
     Location,
     Calendar,
-    List,
     DataAnalysis,
   };
   return map[name || ""] || HomeFilled;
 }
 
+const currentMeta = computed(() => {
+  return (
+    menuMeta[route.path] || {
+      section: "工作台",
+      sectionEn: "Workspace",
+      description: "在统一壳层内继续处理当前业务流程。",
+      accent: "overview",
+    }
+  );
+});
+
 const pageTitle = computed(() => {
-  const menu = menus.value.find((x) => x.path === route.path);
+  const menu = menus.value.find((item) => item.path === route.path);
   return menu?.title || "首页";
 });
 
-const displayName = computed(() => (store.profile?.realName as string) || (store.profile?.username as string) || "");
+const accentClass = computed(() => accentClassMap[currentMeta.value.accent] || accentClassMap.overview);
+const displayName = computed(() => (store.profile?.realName as string) || (store.profile?.username as string) || "未知用户");
+const displayRole = computed(() => (store.profile?.roleName as string) || (store.profile?.roleCode as string) || "未分配");
+
+function shortPath(path: string) {
+  return path.replace(/^\//, "");
+}
 
 async function logout() {
   try {
     await http.post("/auth/logout");
   } catch {
-    /* ignore */
+    // ignore logout failure and clear local session anyway
   }
   store.clear();
   router.push("/login");
@@ -134,193 +190,232 @@ async function logout() {
 </script>
 
 <style scoped>
-.layout {
+.shell {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(215, 194, 139, 0.12), transparent 22%),
-    linear-gradient(180deg, #eef4ef 0%, #e8efe8 100%);
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
 }
 
-.aside {
-  position: relative;
-  overflow: hidden;
+.shell__aside {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  padding: 24px 20px;
   background:
-    linear-gradient(180deg, rgba(12, 23, 32, 0.98) 0%, rgba(27, 67, 50, 0.97) 100%);
-  color: #f6f3ea;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 18px 0 36px rgba(15, 23, 32, 0.14);
+    radial-gradient(circle at top right, rgba(203, 173, 103, 0.18), transparent 22%),
+    linear-gradient(180deg, rgba(18, 54, 41, 0.98) 0%, rgba(23, 58, 46, 0.98) 100%);
+  color: #f6f2e8;
 }
 
-.aside::before {
+.shell__aside::after {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at top right, rgba(215, 194, 139, 0.18), transparent 24%),
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: auto, 34px 34px, 34px 34px;
-  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.34;
   pointer-events: none;
 }
 
-.logo-wrap {
+.shell__brand,
+.shell__nav-copy,
+.shell__nav {
   position: relative;
   z-index: 1;
-  padding: 24px 20px 18px;
+}
+
+.shell__brand {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.logo-badge {
-  width: 50px;
-  height: 50px;
-  border-radius: 16px;
+.shell__brand-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #cbad67 0%, #f4e7c5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #d7c28b 0%, #b6cdaa 100%);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
 }
 
-.logo-badge-icon {
-  width: 32px;
-  height: 32px;
-  display: block;
+.shell__brand-icon {
+  width: 34px;
+  height: 34px;
 }
 
-.logo-copy strong {
+.shell__brand-title {
   display: block;
-  font-size: 17px;
-  line-height: 1.3;
+  font-size: 18px;
 }
 
-.logo-copy span {
-  display: block;
-  margin-top: 4px;
+.shell__brand-copy {
+  margin: 4px 0 0;
+  color: rgba(246, 242, 232, 0.64);
+  line-height: 1.5;
   font-size: 12px;
-  color: rgba(246, 243, 234, 0.58);
 }
 
-.menu {
-  position: relative;
-  z-index: 1;
-  border-right: none;
-  padding: 8px 12px 20px;
-}
-
-.menu :deep(.el-menu-item),
-.menu :deep(.el-sub-menu__title) {
-  margin-bottom: 6px;
-  border-radius: 14px;
-  height: 46px;
-  line-height: 46px;
-}
-
-.menu :deep(.el-menu-item:hover),
-.menu :deep(.el-sub-menu__title:hover) {
+.shell__nav-copy {
+  margin-top: 26px;
+  padding: 18px;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
 }
 
-.menu :deep(.el-menu-item.is-active) {
-  background: linear-gradient(135deg, rgba(215, 194, 139, 0.28), rgba(135, 191, 163, 0.22));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+.shell__nav-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(246, 242, 232, 0.56);
 }
 
-.menu :deep(.el-sub-menu .el-menu) {
-  background: transparent;
+.shell__nav-copy h2 {
+  margin: 0;
+  font-size: 24px;
 }
 
-.content-shell {
-  min-width: 0;
+.shell__nav-copy p:last-child {
+  margin: 10px 0 0;
+  color: rgba(246, 242, 232, 0.68);
+  line-height: 1.7;
 }
 
-.header {
+.shell__nav {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shell__nav-group {
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.shell__nav-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: rgba(246, 242, 232, 0.72);
+  font-size: 13px;
+}
+
+.shell__nav-link {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
-  background: rgba(250, 247, 239, 0.86);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(27, 67, 50, 0.08);
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  color: rgba(246, 242, 232, 0.76);
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
 }
 
-.header-kicker {
-  margin: 0 0 6px;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  color: #6d8e7b;
+.shell__nav-link small {
+  color: rgba(246, 242, 232, 0.38);
 }
 
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #13231a;
+.shell__nav-link:hover,
+.shell__nav-link.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(2px);
 }
 
-.right {
+.shell__nav-link.is-active {
+  color: #fff8ea;
+}
+
+.shell__content {
+  min-width: 0;
+  padding: 24px;
+}
+
+.shell__topbar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-.user-chip {
-  min-width: 148px;
-  padding: 10px 14px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(27, 67, 50, 0.08);
-}
-
-.user-label {
-  display: block;
-  margin-bottom: 4px;
+.shell__topbar-kicker {
+  margin: 0 0 8px;
+  color: #6b7d73;
   font-size: 12px;
-  color: #6b7280;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.name {
-  color: #13231a;
-  font-size: 14px;
+.shell__topbar h1 {
+  margin: 0;
+  font-size: 28px;
 }
 
-.logout-btn {
-  min-height: 40px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+.shell__topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.main {
-  min-height: calc(100vh - 84px);
-  padding: 24px;
-  background: transparent;
+.shell__identity {
+  min-width: 160px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(24, 49, 38, 0.08);
+  box-shadow: var(--hr-shadow-soft);
 }
 
-@media (max-width: 900px) {
-  .layout {
-    display: block;
+.shell__identity-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--hr-text-soft);
+  font-size: 12px;
+}
+
+@media (max-width: 1120px) {
+  .shell {
+    grid-template-columns: 1fr;
   }
 
-  .aside {
-    width: 100% !important;
+  .shell__aside {
+    position: relative;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .shell__content {
+    padding: 16px;
   }
 
-  .header {
-    padding: 16px 18px;
+  .shell__topbar {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
   }
 
-  .right {
+  .shell__topbar-actions {
     width: 100%;
     justify-content: space-between;
   }
 
-  .main {
-    padding: 16px;
+  .shell__identity {
+    min-width: 0;
+    flex: 1;
   }
 }
 </style>
