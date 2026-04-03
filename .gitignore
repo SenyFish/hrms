@@ -4,3 +4,9 @@
 **/.idea/
 *.iml
 **/.vscode/
+**/*.log
+logs/
+backend/run.log
+backend/spring-boot-run.log
+frontend/vite-dev.log
+*.xlsx
