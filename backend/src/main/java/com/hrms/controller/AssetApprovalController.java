@@ -108,7 +108,7 @@ public class AssetApprovalController {
         approval.setRemark(body.getRemark());
         approval.setRequestedQuantity(body.getRequestedQuantity() != null ? body.getRequestedQuantity() : 1);
 
-        if (isAdmin(loginUser)) {
+        if (isAdmin(loginUser) || isHr(loginUser)) {
             if (body.getApplicantUserId() != null) {
                 User user = userRepository.findById(body.getApplicantUserId())
                         .orElseThrow(() -> new IllegalArgumentException("申请人不存在"));
@@ -123,6 +123,8 @@ public class AssetApprovalController {
 
             if (body.getStatus() != null && !body.getStatus().isBlank()) {
                 approval.setStatus(body.getStatus());
+            } else if (!updating || approval.getStatus() == null || approval.getStatus().isBlank()) {
+                approval.setStatus("待审批");
             }
             return;
         }

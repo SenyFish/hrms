@@ -71,6 +71,12 @@ import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
 
 type AssetOption = { id: number; assetName: string };
+type AssetListResponse = {
+  list: AssetOption[];
+  total: number;
+  page: number;
+  size: number;
+};
 type ApprovalRow = {
   id?: number;
   applicantName?: string;
@@ -129,12 +135,12 @@ function canDelete(row: ApprovalRow) {
 }
 
 async function load() {
-  const [approvals, assetList] = await Promise.all([
+  const [approvals, assetPage] = await Promise.all([
     http.get("/finance/approvals"),
-    http.get("/finance/assets"),
+    http.get("/finance/assets", { params: { page: 1, size: 200 } }),
   ]);
   list.value = approvals as ApprovalRow[];
-  assets.value = (assetList as AssetOption[]).map((item) => ({ id: item.id, assetName: item.assetName }));
+  assets.value = ((assetPage as AssetListResponse).list || []).map((item) => ({ id: item.id, assetName: item.assetName }));
 }
 
 function open(row?: ApprovalRow) {
@@ -167,7 +173,7 @@ async function save() {
   }
 
   const payload = { ...form };
-  if (!isAdmin.value) {
+  if (!canApprove.value) {
     payload.status = "待审批";
     payload.applicantName = (store.profile?.realName as string) || (store.profile?.username as string) || "";
   }
