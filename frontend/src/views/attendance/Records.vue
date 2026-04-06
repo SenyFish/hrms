@@ -1,91 +1,126 @@
 <template>
-  <div class="app-page">
-    <PageSection
-      eyebrow="Attendance"
-      title="考勤记录与统计"
-      :description="isHr ? '按时间范围查看全量打卡记录，并处理导入导出。' : '查看个人打卡记录并快速完成上下班打卡。'"
-      flush
-    >
-      <FilterToolbar>
-        <el-date-picker v-model="range" type="daterange" value-format="YYYY-MM-DD" />
-        <el-input
-          v-model="query.keyword"
-          class="page-field"
-          :placeholder="isHr ? '搜索员工或状态' : '搜索状态'"
-        />
-        <el-button type="primary" @click="search">查询</el-button>
-        <el-button @click="resetSearch">重置</el-button>
-
-        <template #actions>
+  <UCard variant="soft">
+    <template #header>
+      <div class="header-bar">
+        <span>考勤记录与统计</span>
+        <div class="header-actions">
           <template v-if="isHr">
-            <el-button type="success" @click="exportXlsx">导出月报</el-button>
-            <el-upload :show-file-list="false" accept=".csv" :http-request="doImport" style="display: inline-block">
-              <el-button type="warning">导入 CSV</el-button>
-            </el-upload>
+            <UInput v-model="rangeStart" type="date" />
+            <span class="range-sep">至</span>
+            <UInput v-model="rangeEnd" type="date" />
+            <UInput
+              v-model="query.keyword"
+              class="toolbar-input"
+              size="md"
+              variant="subtle"
+              icon="i-lucide-search"
+              placeholder="请输入员工或状态关键字"
+              @keyup.enter="search"
+            />
+            <UButton color="neutral" variant="soft" @click="search">查询</UButton>
+            <UButton color="neutral" variant="soft" @click="resetSearch">重置</UButton>
+            <UButton color="success" icon="i-lucide-file-spreadsheet" @click="exportXlsx">导出月报表</UButton>
+            <label class="import-btn">
+              <input type="file" accept=".csv" class="file-input" @change="onImportChange" />
+              <UButton color="warning" icon="i-lucide-upload">导入 CSV</UButton>
+            </label>
           </template>
           <template v-else>
-            <button class="frappe-button" data-variant="solid" type="button" @click="clock('IN')">上班打卡</button>
-            <button class="frappe-button" data-variant="outline" type="button" @click="clock('OUT')">下班打卡</button>
+            <UInput
+              v-model="query.keyword"
+              class="toolbar-input-sm"
+              size="md"
+              variant="subtle"
+              icon="i-lucide-search"
+              placeholder="请输入状态关键字"
+              @keyup.enter="search"
+            />
+            <UButton color="neutral" variant="soft" @click="search">查询</UButton>
+            <UButton color="neutral" variant="soft" @click="resetSearch">重置</UButton>
+            <UButton color="primary" icon="i-lucide-log-in" @click="clock('IN')">上班打卡</UButton>
+            <UButton color="success" icon="i-lucide-log-out" @click="clock('OUT')">下班打卡</UButton>
           </template>
-        </template>
-      </FilterToolbar>
-
-      <div class="app-table">
-        <el-table :data="rows" border>
-          <el-table-column v-if="isHr" prop="user.realName" label="员工" width="120" />
-          <el-table-column prop="attDate" label="日期" width="130" />
-          <el-table-column label="上班" width="180">
-            <template #default="{ row }">{{ fmt(row.clockIn) }}</template>
-          </el-table-column>
-          <el-table-column label="下班" width="180">
-            <template #default="{ row }">{{ fmt(row.clockOut) }}</template>
-          </el-table-column>
-          <el-table-column label="状态" width="120">
-            <template #default="{ row }">
-              <span class="pill-tag" :class="statusClass(String(row.status || ''))">{{ row.status }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
+        </div>
       </div>
+    </template>
 
-      <div class="page-pager">
-        <el-pagination
-          v-model:current-page="query.page"
-          v-model:page-size="query.size"
-          background
-          layout="total, sizes, prev, pager, next, jumper"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          @current-change="load"
-          @size-change="handleSizeChange"
-        />
-      </div>
-    </PageSection>
-  </div>
+    <UTable :data="rows" :columns="columns" :loading="loading" class="table-wrap">
+      <template #user-cell="{ row }">{{ row.original.user?.realName || "-" }}</template>
+      <template #clockIn-cell="{ row }">{{ fmt(row.original.clockIn) }}</template>
+      <template #clockOut-cell="{ row }">{{ fmt(row.original.clockOut) }}</template>
+      <template #status-cell="{ row }">
+        <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status || "-" }}</UBadge>
+      </template>
+    </UTable>
+
+    <div class="pager">
+      <span class="pager-total">共 {{ total }} 条</span>
+      <UPagination v-model:page="query.page" :total="total" :items-per-page="query.size" show-edges @update:page="load" />
+      <USelectMenu
+        v-model="query.size"
+        :items="pageSizeOptions"
+        value-key="value"
+        label-key="label"
+        class="size-select"
+        @update:model-value="handleSizeChange"
+      />
+    </div>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
-import type { UploadRequestOptions } from "element-plus";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
 import { downloadByFetch } from "@/utils/download";
-import FilterToolbar from "@/components/ui/FilterToolbar.vue";
-import PageSection from "@/components/ui/PageSection.vue";
 
-type AttendanceRow = Record<string, unknown>;
+type AttendanceRow = Record<string, unknown> & {
+  user?: { realName?: string };
+  attDate?: string;
+  clockIn?: string;
+  clockOut?: string;
+  status?: string;
+};
 type AttendanceListResponse = {
   list: AttendanceRow[];
   total: number;
+  page: number;
+  size: number;
 };
 
+const toast = useToast();
 const store = useUserStore();
 const roleCode = computed(() => store.profile?.roleCode as string);
 const isHr = computed(() => roleCode.value === "ADMIN" || roleCode.value === "HR");
-const range = ref<[string, string] | null>(null);
+
+const pageSizeOptions = [
+  { label: "10 条/页", value: 10 },
+  { label: "20 条/页", value: 20 },
+  { label: "50 条/页", value: 50 },
+  { label: "100 条/页", value: 100 },
+];
+
+const columns = computed<TableColumn<AttendanceRow>[]>(() => {
+  const base: TableColumn<AttendanceRow>[] = [];
+  if (isHr.value) {
+    base.push({ accessorKey: "user", header: "员工" });
+  }
+  base.push(
+    { accessorKey: "attDate", header: "日期" },
+    { accessorKey: "clockIn", header: "上班" },
+    { accessorKey: "clockOut", header: "下班" },
+    { accessorKey: "status", header: "状态" }
+  );
+  return base;
+});
+
+const rangeStart = ref("");
+const rangeEnd = ref("");
 const rows = ref<AttendanceRow[]>([]);
 const total = ref(0);
+const loading = ref(false);
 const query = reactive({
   keyword: "",
   page: 1,
@@ -97,28 +132,33 @@ function fmt(v: unknown) {
   return new Date(v as string).toLocaleString("zh-CN");
 }
 
-function statusClass(status: string) {
-  if (status.includes("正常")) return "pill-tag--success";
-  if (status.includes("迟到") || status.includes("早退")) return "pill-tag--warning";
-  if (status.includes("缺勤")) return "pill-tag--danger";
-  return "pill-tag--neutral";
+function statusColor(status?: string) {
+  if (!status) return "neutral";
+  if (status.includes("正常")) return "success";
+  if (status.includes("迟到") || status.includes("早退")) return "warning";
+  return "primary";
 }
 
 async function load() {
-  const params = {
-    from: range.value?.[0],
-    to: range.value?.[1],
-    keyword: query.keyword || undefined,
-    page: query.page,
-    size: query.size,
-  };
+  loading.value = true;
+  try {
+    const params = {
+      from: rangeStart.value || undefined,
+      to: rangeEnd.value || undefined,
+      keyword: query.keyword || undefined,
+      page: query.page,
+      size: query.size,
+    };
 
-  const data = isHr.value
-    ? ((await http.get("/attendance/records", { params })) as AttendanceListResponse)
-    : ((await http.get("/attendance/records/my", { params })) as AttendanceListResponse);
+    const data = isHr.value
+      ? ((await http.get("/attendance/records", { params })) as AttendanceListResponse)
+      : ((await http.get("/attendance/records/my", { params })) as AttendanceListResponse);
 
-  rows.value = data.list || [];
-  total.value = data.total || 0;
+    rows.value = data.list || [];
+    total.value = data.total || 0;
+  } finally {
+    loading.value = false;
+  }
 }
 
 function search() {
@@ -133,7 +173,8 @@ function resetSearch() {
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - 30);
-  range.value = [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)];
+  rangeStart.value = start.toISOString().slice(0, 10);
+  rangeEnd.value = end.toISOString().slice(0, 10);
   load();
 }
 
@@ -144,33 +185,41 @@ function handleSizeChange() {
 
 async function clock(type: string) {
   await http.post("/attendance/clock", { type });
-  ElMessage.success(type === "IN" ? "上班打卡成功" : "下班打卡成功");
+  toast.add({ title: type === "IN" ? "上班打卡成功" : "下班打卡成功", color: "success" });
   await load();
 }
 
 async function exportXlsx() {
-  const from = range.value?.[0];
-  const to = range.value?.[1];
+  const from = rangeStart.value;
+  const to = rangeEnd.value;
   if (!from || !to) {
-    ElMessage.warning("请选择日期范围");
+    toast.add({ title: "请选择日期范围", color: "warning" });
     return;
   }
   try {
-    await downloadByFetch(`/api/attendance/export?from=${from}&to=${to}`, { headers: { Authorization: `Bearer ${store.token}` } }, `attendance-${from}-${to}.xlsx`);
+    await downloadByFetch(
+      `/api/attendance/export?from=${from}&to=${to}`,
+      { headers: { Authorization: `Bearer ${store.token}` } },
+      `attendance-${from}-${to}.xlsx`
+    );
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : "导出失败");
+    toast.add({ title: error instanceof Error ? error.message : "导出失败", color: "error" });
   }
 }
 
-async function doImport(opt: UploadRequestOptions) {
+async function onImportChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
   const fd = new FormData();
-  fd.append("file", opt.file as File);
+  fd.append("file", file);
   await fetch("/api/attendance/import", {
     method: "POST",
     headers: { Authorization: `Bearer ${store.token}` },
     body: fd,
   });
-  ElMessage.success("导入完成");
+  toast.add({ title: "导入完成", color: "success" });
+  input.value = "";
   await load();
 }
 
@@ -178,19 +227,78 @@ onMounted(() => {
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - 30);
-  range.value = [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)];
+  rangeStart.value = start.toISOString().slice(0, 10);
+  rangeEnd.value = end.toISOString().slice(0, 10);
   load();
 });
 </script>
 
 <style scoped>
-.page-field {
-  min-width: 220px;
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.page-pager {
+.header-actions {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-input {
+  width: 240px;
+}
+
+.toolbar-input-sm {
+  width: 220px;
+}
+
+.range-sep {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.import-btn {
+  display: inline-flex;
+}
+
+.file-input {
+  display: none;
+}
+
+.table-wrap {
+  overflow: hidden;
+}
+
+.pager {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
-  margin-top: 18px;
+  gap: 12px;
+}
+
+.pager-total {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.size-select {
+  width: 120px;
+}
+
+@media (max-width: 1100px) {
+  .header-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pager {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 </style>

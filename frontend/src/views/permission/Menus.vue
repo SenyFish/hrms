@@ -1,56 +1,79 @@
 <template>
-  <div class="app-page">
-    <PageSection
-      eyebrow="Security"
-      title="菜单管理"
-      description="维护系统菜单层级、路径和图标，作为权限分配与导航渲染的基础数据。"
-      flush
-    >
-      <template #actions>
-        <button class="frappe-button" data-variant="solid" type="button" @click="open()">新增菜单</button>
-      </template>
-
-      <div class="app-table">
-        <el-table :data="list" border row-key="id" default-expand-all>
-          <el-table-column prop="title" label="标题" />
-          <el-table-column prop="path" label="路径" />
-          <el-table-column prop="icon" label="图标" width="120" />
-          <el-table-column prop="sortOrder" label="排序" width="100" />
-          <el-table-column prop="parentId" label="父级 ID" width="100" />
-          <el-table-column label="操作" width="150">
-            <template #default="{ row }">
-              <el-button type="primary" link @click="open(row)">编辑</el-button>
-              <el-button type="danger" link @click="remove(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+  <UCard variant="soft">
+    <template #header>
+      <div class="header-bar">
+        <span>菜单管理</span>
+        <UButton color="primary" icon="i-lucide-plus" @click="open()">新增菜单</UButton>
       </div>
-    </PageSection>
+    </template>
 
-    <el-dialog v-model="visible" title="菜单" width="520px">
-      <el-form :model="form" label-width="90px">
-        <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
-        <el-form-item label="路径"><el-input v-model="form.path" /></el-form-item>
-        <el-form-item label="图标"><el-input v-model="form.icon" placeholder="Element Plus 图标名" /></el-form-item>
-        <el-form-item label="排序"><el-input-number v-model="form.sortOrder" :min="0" /></el-form-item>
-        <el-form-item label="父级 ID"><el-input-number v-model="form.parentId" :min="0" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+    <UTable :data="list" :columns="columns" :loading="loading" class="table-wrap">
+      <template #actions-cell="{ row }">
+        <div class="action-group">
+          <UButton color="primary" variant="ghost" size="sm" @click="open(row.original)">编辑</UButton>
+          <UButton color="error" variant="ghost" size="sm" @click="remove(row.original)">删除</UButton>
+        </div>
       </template>
-    </el-dialog>
-  </div>
+    </UTable>
+
+    <UModal v-model:open="visible" :title="form.id ? '编辑菜单' : '新增菜单'">
+      <template #body>
+        <div class="form-grid">
+          <div class="field-block">
+            <label class="field-label">标题</label>
+            <UInput v-model="form.title" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">路径</label>
+            <UInput v-model="form.path" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">图标</label>
+            <UInput v-model="form.icon" placeholder="图标名称" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">排序</label>
+            <UInputNumber v-model="form.sortOrder" :min="0" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">父级ID</label>
+            <UInputNumber v-model="form.parentId" :min="0" />
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="visible = false">取消</UButton>
+          <UButton color="primary" :loading="saving" @click="save">保存</UButton>
+        </div>
+      </template>
+    </UModal>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
-import PageSection from "@/components/ui/PageSection.vue";
 
-const list = ref<Array<Record<string, unknown>>>([]);
+type MenuRow = Record<string, any> & { id?: number };
+
+const toast = useToast();
+const list = ref<MenuRow[]>([]);
 const visible = ref(false);
+const loading = ref(false);
+const saving = ref(false);
+
+const columns: TableColumn<MenuRow>[] = [
+  { accessorKey: "title", header: "标题" },
+  { accessorKey: "path", header: "路由路径" },
+  { accessorKey: "icon", header: "图标" },
+  { accessorKey: "sortOrder", header: "排序" },
+  { accessorKey: "parentId", header: "父级ID" },
+  { accessorKey: "actions", header: "操作" },
+];
+
 const form = reactive({
   id: undefined as number | undefined,
   title: "",
@@ -61,10 +84,15 @@ const form = reactive({
 });
 
 async function load() {
-  list.value = (await http.get("/menus")) as typeof list.value;
+  loading.value = true;
+  try {
+    list.value = (await http.get("/menus")) as MenuRow[];
+  } finally {
+    loading.value = false;
+  }
 }
 
-function open(row?: Record<string, unknown>) {
+function open(row?: MenuRow) {
   if (row) {
     Object.assign(form, row);
     form.id = row.id as number;
@@ -80,22 +108,79 @@ function open(row?: Record<string, unknown>) {
 }
 
 async function save() {
-  if (form.id) {
-    await http.put(`/menus/${form.id}`, form);
-  } else {
-    await http.post("/menus", form);
+  saving.value = true;
+  try {
+    if (form.id) {
+      await http.put(`/menus/${form.id}`, form);
+    } else {
+      await http.post("/menus", form);
+    }
+    toast.add({ title: "保存成功", color: "success" });
+    visible.value = false;
+    await load();
+  } finally {
+    saving.value = false;
   }
-  ElMessage.success("保存成功");
-  visible.value = false;
-  load();
 }
 
-async function remove(row: Record<string, unknown>) {
-  await ElMessageBox.confirm("确定删除该菜单吗？", "提示");
+async function remove(row: MenuRow) {
+  const confirmed = window.confirm("确定删除该菜单吗？");
+  if (!confirmed) return;
   await http.delete(`/menus/${row.id}`);
-  ElMessage.success("已删除");
-  load();
+  toast.add({ title: "已删除", color: "success" });
+  await load();
 }
 
 onMounted(load);
 </script>
+
+<style scoped>
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.table-wrap {
+  overflow: hidden;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-block-full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #264334;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

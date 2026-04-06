@@ -1,117 +1,138 @@
 <template>
-  <div class="app-page">
-    <div class="stat-grid">
-      <StatPanel label="在职员工" :value="summary?.employeeCount ?? '-'" hint="员工档案">
-        当前组织正式纳入系统的人员数量
-      </StatPanel>
-      <StatPanel label="待审批请假" :value="summary?.pendingLeaveCount ?? '-'" hint="待办">
-        待 HR 或管理员处理的请假申请
-      </StatPanel>
-      <StatPanel label="今日考勤记录" :value="summary?.todayAttendanceCount ?? '-'" hint="实时">
-        今天已生成的打卡记录总数
-      </StatPanel>
-      <StatPanel label="今日已打卡" :value="summary?.todayClockInCount ?? '-'" hint="上班">
-        已完成上班或下班登记的员工
-      </StatPanel>
-      <StatPanel label="待执行关怀" :value="summary?.pendingCarePlanCount ?? '-'" hint="提醒">
-        生日、周年等关怀任务待处理数量
-      </StatPanel>
-    </div>
-
-    <div class="split-grid">
-      <PageSection
-        eyebrow="Attendance"
-        title="近 7 日考勤趋势"
-        description="保留当前后端统计接口，以更紧凑的桌面图表呈现近期波动。"
+  <div class="page">
+    <section class="stats-grid">
+      <UCard
+        v-for="item in statCards"
+        :key="item.label"
+        variant="soft"
+        class="stat-card"
+        @click="goToPage(item.path)"
       >
-        <div ref="chartRef" class="home-chart"></div>
-      </PageSection>
+        <div class="stat-label">{{ item.label }}</div>
+        <div class="stat-value" :class="item.tone">{{ item.value }}</div>
+      </UCard>
+    </section>
 
-      <PageSection
-        eyebrow="Profile"
-        title="当前用户"
-        description="显示当前登录用户的身份、工号和角色信息。"
-      >
-        <div class="home-profile">
-          <div class="home-profile__hero">
-            <div class="home-profile__avatar">{{ initials }}</div>
-            <div>
-              <strong>{{ profile?.realName || profile?.username || "未命名用户" }}</strong>
-              <p>{{ profile?.roleName || profile?.roleCode || "未分配角色" }}</p>
-            </div>
+    <section class="overview-grid">
+      <UCard variant="soft" class="chart-card">
+        <template #header>
+          <div class="section-title">近 7 日考勤趋势</div>
+        </template>
+        <div ref="chartRef" class="chart-box" />
+      </UCard>
+
+      <UCard variant="soft">
+        <template #header>
+          <div class="section-head">
+            <div class="section-title">个人信息</div>
+            <UButton color="primary" variant="soft" size="sm" icon="i-lucide-user-pen" @click="openProfileEditor">编辑资料</UButton>
           </div>
+        </template>
 
-          <div class="info-list">
-            <div class="info-list__item">
-              <span class="info-list__label">工号</span>
-              <strong>{{ profile?.employeeNo || "-" }}</strong>
-            </div>
-            <div class="info-list__item">
-              <span class="info-list__label">账号</span>
-              <strong>{{ profile?.username || "-" }}</strong>
-            </div>
-            <div class="info-list__item">
-              <span class="info-list__label">角色编码</span>
-              <strong>{{ profile?.roleCode || "-" }}</strong>
-            </div>
+        <div class="profile-card">
+          <div class="profile-line">
+            <span>账号</span>
+            <strong>{{ profile?.username || "-" }}</strong>
+          </div>
+          <div class="profile-line">
+            <span>姓名</span>
+            <strong>{{ profile?.realName || "-" }}</strong>
+          </div>
+          <div class="profile-line">
+            <span>工号</span>
+            <strong>{{ profile?.employeeNo || "-" }}</strong>
+          </div>
+          <div class="profile-line">
+            <span>角色</span>
+            <strong>{{ profile?.roleName || "-" }}</strong>
+          </div>
+          <div class="profile-line">
+            <span>手机号</span>
+            <strong>{{ profile?.phone || "-" }}</strong>
+          </div>
+          <div class="profile-line">
+            <span>邮箱</span>
+            <strong>{{ profile?.email || "-" }}</strong>
           </div>
         </div>
-      </PageSection>
-    </div>
+      </UCard>
+    </section>
 
-    <div class="split-grid home-secondary">
-      <PageSection
-        eyebrow="Quick Access"
-        title="核心模块入口"
-        description="优先跳转到系统、权限、考勤和薪资这些首轮重构覆盖的模块。"
-      >
-        <div class="home-links">
-          <router-link v-for="link in quickLinks" :key="link.path" :to="link.path" class="home-link">
-            <span class="home-link__title">{{ link.title }}</span>
-            <small>{{ link.description }}</small>
-          </router-link>
+    <UModal v-model:open="profileVisible" title="编辑个人信息">
+      <template #body>
+        <div class="profile-form">
+          <div class="field-block">
+            <label class="field-label">账号</label>
+            <UInput v-model="profileForm.username" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">姓名</label>
+            <UInput v-model="profileForm.realName" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">新密码</label>
+            <UInput v-model="profileForm.password" type="password" placeholder="不填写则保持原密码" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">手机号</label>
+            <UInput v-model="profileForm.phone" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">邮箱</label>
+            <UInput v-model="profileForm.email" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">生日</label>
+            <UInput v-model="profileForm.birthday" type="date" size="lg" variant="subtle" icon="i-lucide-calendar-days" />
+          </div>
         </div>
-      </PageSection>
+      </template>
+      <template #footer>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="profileVisible = false">取消</UButton>
+          <UButton color="primary" :loading="profileSaving" @click="saveProfile">保存</UButton>
+        </div>
+      </template>
+    </UModal>
 
-      <PageSection
-        v-if="canViewCare"
-        eyebrow="Care"
-        title="近期关怀提醒"
-        description="保持当前后端提醒数据，集中呈现未来 30 天的员工关怀任务。"
-        flush
-      >
-        <div v-if="careReminders.length" class="home-reminders">
-          <article v-for="row in careReminders" :key="`${row.userId}-${row.careType}-${row.targetDate}`" class="home-reminder">
-            <div>
-              <strong>{{ row.realName }}</strong>
-              <p>{{ row.employeeNo }} · {{ row.careType }} · {{ row.targetDate }}</p>
-            </div>
-            <div class="home-reminder__meta">
-              <span class="pill-tag" :class="row.planned ? 'pill-tag--success' : 'pill-tag--warning'">
-                {{ row.planned ? "已生成计划" : `${row.daysLeft} 天后` }}
-              </span>
-              <el-button type="primary" link :disabled="row.planned" @click="quickCreate(row)">一键生成</el-button>
-            </div>
-          </article>
-        </div>
-        <AppEmptyState v-else title="暂无近期关怀提醒" description="未来 30 天没有生日或入职周年提醒。" />
-      </PageSection>
-    </div>
+    <UCard v-if="canViewCare" variant="soft" class="care-card">
+      <template #header>
+        <div class="section-title">近期关怀提醒</div>
+      </template>
+
+      <UTable :data="careReminders" :columns="careColumns" :empty="'未来 30 天暂无生日或入职周年提醒'" class="care-table">
+        <template #status-cell="{ row }">
+          <UBadge :color="row.original.planned ? 'success' : 'warning'" variant="soft">
+            {{ row.original.planned ? "已生成计划" : "待生成" }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <UButton
+            color="primary"
+            variant="ghost"
+            size="sm"
+            :disabled="row.original.planned"
+            @click="quickCreate(row.original)"
+          >
+            一键生成计划
+          </UButton>
+        </template>
+      </UTable>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import { LineChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import { init, use, type ECharts } from "echarts/core";
-import { ElMessage } from "element-plus";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
-import AppEmptyState from "@/components/ui/AppEmptyState.vue";
-import PageSection from "@/components/ui/PageSection.vue";
-import StatPanel from "@/components/ui/StatPanel.vue";
 
 use([LineChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
@@ -125,29 +146,121 @@ type CareReminder = {
   planned: boolean;
 };
 
+type ProfileForm = {
+  username: string;
+  realName: string;
+  password: string;
+  phone: string;
+  email: string;
+  birthday: string;
+};
+
+const router = useRouter();
 const store = useUserStore();
+const toast = useToast();
 const summary = ref<Record<string, number> | null>(null);
 const chartRef = ref<HTMLElement | null>(null);
-const careReminders = ref<CareReminder[]>([]);
-let chartInstance: ECharts | null = null;
-
-const profile = computed(() => (store.profile || {}) as Record<string, string>);
+const profile = computed(() => store.profile as Record<string, string> | null);
 const roleCode = computed(() => String(store.profile?.roleCode || ""));
 const canViewCare = computed(() => roleCode.value === "ADMIN" || roleCode.value === "HR");
-const initials = computed(() => {
-  const source = String(profile.value.realName || profile.value.username || "HR");
-  return source.slice(0, 2).toUpperCase();
+const careReminders = ref<CareReminder[]>([]);
+const profileVisible = ref(false);
+const profileSaving = ref(false);
+const profileForm = reactive<ProfileForm>({
+  username: "",
+  realName: "",
+  password: "",
+  phone: "",
+  email: "",
+  birthday: "",
+});
+let chartInstance: ECharts | null = null;
+
+const careColumns: TableColumn<CareReminder>[] = [
+  { accessorKey: "realName", header: "员工" },
+  { accessorKey: "employeeNo", header: "工号" },
+  { accessorKey: "careType", header: "提醒类型" },
+  { accessorKey: "targetDate", header: "日期" },
+  { accessorKey: "daysLeft", header: "剩余天数" },
+  { accessorKey: "status", header: "状态" },
+  { accessorKey: "actions", header: "操作" },
+];
+
+const statCards = computed(() => {
+  const common = [
+    { label: "今日考勤记录", value: summary.value?.todayAttendanceCount ?? "-", path: "/attendance/records", tone: "" },
+    { label: "今日已打卡", value: summary.value?.todayClockInCount ?? "-", path: "/attendance/records", tone: "ok" },
+  ];
+
+  if (roleCode.value === "ADMIN" || roleCode.value === "HR") {
+    return [
+      { label: "在职员工", value: summary.value?.employeeCount ?? "-", path: "/system/employees", tone: "" },
+      { label: "待审批请假", value: summary.value?.pendingLeaveCount ?? "-", path: "/attendance/leaves", tone: "warn" },
+      { label: "待审批出差", value: summary.value?.pendingTripCount ?? "-", path: "/attendance/trips", tone: "trip" },
+      { label: "请假中员工", value: summary.value?.activeLeaveCount ?? "-", path: "/attendance/leaves", tone: "warn" },
+      { label: "已通过出差", value: summary.value?.approvedTripCount ?? "-", path: "/attendance/trips", tone: "trip" },
+      ...common,
+      { label: "待执行关怀", value: summary.value?.pendingCarePlanCount ?? "-", path: "/care/plans", tone: "care" },
+    ];
+  }
+
+  return [
+    { label: "我的请假申请", value: summary.value?.myLeaveCount ?? "-", path: "/attendance/leaves", tone: "warn" },
+    { label: "我的出差申请", value: summary.value?.myTripCount ?? "-", path: "/attendance/trips", tone: "trip" },
+    { label: "待审批请假", value: summary.value?.myPendingLeaveCount ?? "-", path: "/attendance/leaves", tone: "warn" },
+    { label: "待审批出差", value: summary.value?.myPendingTripCount ?? "-", path: "/attendance/trips", tone: "trip" },
+    ...common,
+  ];
 });
 
-const quickLinks = [
-  { path: "/system/employees", title: "员工管理", description: "维护档案、角色和组织归属" },
-  { path: "/permission/roles", title: "角色权限", description: "集中配置角色和菜单访问" },
-  { path: "/attendance/records", title: "考勤记录", description: "查看打卡、导入导出和统计" },
-  { path: "/salary/records", title: "薪资记录", description: "处理月度薪资与参保规则" },
-];
+function goToPage(path: string) {
+  router.push(path);
+}
 
 function handleResize() {
   chartInstance?.resize();
+}
+
+async function openProfileEditor() {
+  const userId = Number(store.profile?.id || 0);
+  if (!userId) {
+    toast.add({ title: "未获取到当前登录人信息", color: "error" });
+    return;
+  }
+  try {
+    const data = (await http.get(`/users/${userId}`)) as Record<string, unknown>;
+    profileForm.username = String(data.username || "");
+    profileForm.realName = String(data.realName || "");
+    profileForm.password = "";
+    profileForm.phone = String(data.phone || "");
+    profileForm.email = String(data.email || "");
+    profileForm.birthday = String(data.birthday || "");
+    profileVisible.value = true;
+  } catch (error: unknown) {
+    toast.add({ title: error instanceof Error ? error.message : "加载个人信息失败", color: "error" });
+  }
+}
+
+async function saveProfile() {
+  if (!profileForm.username.trim()) {
+    toast.add({ title: "请输入账号", color: "warning" });
+    return;
+  }
+  if (!profileForm.realName.trim()) {
+    toast.add({ title: "请输入姓名", color: "warning" });
+    return;
+  }
+  profileSaving.value = true;
+  try {
+    await http.put("/users/profile", profileForm);
+    await store.fetchProfile();
+    profileVisible.value = false;
+    toast.add({ title: "个人信息已更新", color: "success" });
+  } catch (error: unknown) {
+    toast.add({ title: error instanceof Error ? error.message : "保存失败", color: "error" });
+  } finally {
+    profileSaving.value = false;
+  }
 }
 
 async function loadCareReminders() {
@@ -161,7 +274,7 @@ async function quickCreate(row: CareReminder) {
     careType: row.careType,
     targetDate: row.targetDate,
   });
-  ElMessage.success("关怀计划已生成");
+  toast.add({ title: "关怀计划已生成", color: "success" });
   await loadCareReminders();
 }
 
@@ -173,42 +286,17 @@ onMounted(async () => {
     chartInstance = init(chartRef.value);
     chartInstance.setOption({
       tooltip: { trigger: "axis" },
-      grid: { top: 18, left: 18, right: 18, bottom: 18, containLabel: true },
-      xAxis: {
-        type: "category",
-        data: trend.labels,
-        axisLine: { lineStyle: { color: "rgba(25, 50, 39, 0.14)" } },
-        axisLabel: { color: "#65756d" },
-      },
+      xAxis: { type: "category", data: trend.labels },
       yAxis: {
         type: "value",
         name: "人次",
-        nameTextStyle: { color: "#65756d" },
-        splitLine: { lineStyle: { color: "rgba(25, 50, 39, 0.08)" } },
-        axisLabel: { color: "#65756d" },
-      },
-      series: [
-        {
-          type: "line",
-          smooth: true,
-          data: trend.values,
-          lineStyle: { width: 3, color: "#245541" },
-          itemStyle: { color: "#cbad67" },
-          areaStyle: {
-            color: {
-              type: "linear",
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [
-                { offset: 0, color: "rgba(36, 85, 65, 0.28)" },
-                { offset: 1, color: "rgba(36, 85, 65, 0.04)" },
-              ],
-            },
-          },
+        minInterval: 1,
+        axisLabel: {
+          formatter: (value: number) => String(Math.trunc(value)),
         },
-      ],
+      },
+      series: [{ type: "line", smooth: true, data: trend.values, areaStyle: {} }],
+      color: ["#0ea5e9"],
     });
     window.addEventListener("resize", handleResize);
   }
@@ -222,124 +310,132 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.home-chart {
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.stat-value {
+  margin-top: 8px;
+  font-size: 30px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stat-value.warn {
+  color: #d97706;
+}
+
+.stat-value.ok {
+  color: #059669;
+}
+
+.stat-value.care {
+  color: #2563eb;
+}
+
+.stat-value.trip {
+  color: #7c3aed;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+  gap: 16px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #173127;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-box {
   height: 320px;
 }
 
-.home-profile {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.home-profile__hero {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.home-profile__avatar {
-  width: 54px;
-  height: 54px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--hr-primary) 0%, var(--hr-primary-strong) 100%);
-  color: #f7f2e7;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.home-profile__hero p {
-  margin: 6px 0 0;
-  color: var(--hr-text-soft);
-}
-
-.home-secondary {
-  align-items: start;
-}
-
-.home-links {
+.profile-card {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.home-link {
-  display: block;
-  padding: 18px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.54));
-  border: 1px solid rgba(24, 49, 38, 0.08);
-  color: inherit;
-  text-decoration: none;
-  box-shadow: var(--hr-shadow-soft);
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.home-link:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--hr-shadow);
-}
-
-.home-link__title {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.home-link small {
-  display: block;
-  margin-top: 8px;
-  color: var(--hr-text-soft);
-  line-height: 1.6;
-}
-
-.home-reminders {
-  display: flex;
-  flex-direction: column;
-}
-
-.home-reminder {
+.profile-line {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  align-items: center;
-  padding: 18px 0;
-  border-bottom: 1px solid rgba(24, 49, 38, 0.08);
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(27, 67, 50, 0.08);
 }
 
-.home-reminder:first-child {
-  padding-top: 0;
+.profile-line span {
+  color: #6b7280;
 }
 
-.home-reminder:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.profile-line strong {
+  color: #13231a;
 }
 
-.home-reminder p {
-  margin: 6px 0 0;
-  color: var(--hr-text-soft);
+.profile-form {
+  display: grid;
+  gap: 14px;
 }
 
-.home-reminder__meta {
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 13px;
+  color: #5b6b63;
+}
+
+.modal-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
-@media (max-width: 900px) {
-  .home-links {
-    grid-template-columns: 1fr;
+.care-table {
+  overflow: hidden;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .home-reminder {
-    flex-direction: column;
-    align-items: flex-start;
+  .overview-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

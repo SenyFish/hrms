@@ -1,93 +1,116 @@
 <template>
-  <el-card>
+  <UCard variant="soft">
     <template #header>
       <div class="header-bar">
         <span>参保城市</span>
-        <el-button type="primary" @click="open()">添加参保城市</el-button>
+        <UButton color="primary" icon="i-lucide-plus" @click="open()">添加参保城市</UButton>
       </div>
     </template>
 
-    <el-table :data="list" border>
-      <el-table-column prop="name" label="城市" width="120" />
-      <el-table-column prop="regionCode" label="区划编码" width="120" />
-      <el-table-column prop="socialAvgSalary" label="社平工资参考" width="140" />
-      <el-table-column label="养老(个/企)" width="130">
-        <template #default="{ row }">{{ formatPercent(row.pensionPersonalRate) }} / {{ formatPercent(row.pensionCompanyRate) }}</template>
-      </el-table-column>
-      <el-table-column label="医疗(个/企)" width="130">
-        <template #default="{ row }">{{ formatPercent(row.medicalPersonalRate) }} / {{ formatPercent(row.medicalCompanyRate) }}</template>
-      </el-table-column>
-      <el-table-column label="失业(个/企)" width="130">
-        <template #default="{ row }">{{ formatPercent(row.unemploymentPersonalRate) }} / {{ formatPercent(row.unemploymentCompanyRate) }}</template>
-      </el-table-column>
-      <el-table-column label="工伤/生育(企)" width="130">
-        <template #default="{ row }">{{ formatPercent(row.injuryCompanyRate) }} / {{ formatPercent(row.maternityCompanyRate) }}</template>
-      </el-table-column>
-      <el-table-column label="公积金(个/企)" width="140">
-        <template #default="{ row }">{{ formatPercent(row.housingFundPersonalRate) }} / {{ formatPercent(row.housingFundCompanyRate) }}</template>
-      </el-table-column>
-      <el-table-column prop="remark" label="备注" min-width="160" />
-      <el-table-column label="操作" width="140">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="open(row)">编辑</el-button>
-          <el-button type="danger" link @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-dialog v-model="visible" title="参保城市" width="680px">
-      <el-form :model="form" label-width="130px">
-        <el-form-item label="城市名称"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="区划编码"><el-input v-model="form.regionCode" /></el-form-item>
-        <el-form-item label="社平工资参考">
-          <el-input-number v-model="form.socialAvgSalary" :min="0" :step="100" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="养老保险比例">
-          <div class="pair-row">
-            <el-input-number v-model="form.pensionPersonalRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-            <el-input-number v-model="form.pensionCompanyRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-          </div>
-          <div class="pair-tip">个人 / 公司，输入 0.08 表示 8%</div>
-        </el-form-item>
-        <el-form-item label="医疗保险比例">
-          <div class="pair-row">
-            <el-input-number v-model="form.medicalPersonalRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-            <el-input-number v-model="form.medicalCompanyRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-          </div>
-        </el-form-item>
-        <el-form-item label="失业保险比例">
-          <div class="pair-row">
-            <el-input-number v-model="form.unemploymentPersonalRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-            <el-input-number v-model="form.unemploymentCompanyRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-          </div>
-        </el-form-item>
-        <el-form-item label="工伤/生育比例">
-          <div class="pair-row">
-            <el-input-number v-model="form.injuryCompanyRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-            <el-input-number v-model="form.maternityCompanyRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-          </div>
-          <div class="pair-tip">公司承担</div>
-        </el-form-item>
-        <el-form-item label="公积金比例">
-          <div class="pair-row">
-            <el-input-number v-model="form.housingFundPersonalRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-            <el-input-number v-model="form.housingFundCompanyRate" :min="0" :max="1" :step="0.001" :precision="4" style="width: 48%" />
-          </div>
-        </el-form-item>
-        <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+    <UTable :data="list" :columns="columns" :loading="loading" class="table-wrap">
+      <template #socialAvgSalary-cell="{ row }">¥{{ formatAmount(row.original.socialAvgSalary) }}</template>
+      <template #pensionRate-cell="{ row }">
+        {{ formatPercent(row.original.pensionPersonalRate) }} / {{ formatPercent(row.original.pensionCompanyRate) }}
       </template>
-    </el-dialog>
-  </el-card>
+      <template #medicalRate-cell="{ row }">
+        {{ formatPercent(row.original.medicalPersonalRate) }} / {{ formatPercent(row.original.medicalCompanyRate) }}
+      </template>
+      <template #unemploymentRate-cell="{ row }">
+        {{ formatPercent(row.original.unemploymentPersonalRate) }} / {{ formatPercent(row.original.unemploymentCompanyRate) }}
+      </template>
+      <template #injuryRate-cell="{ row }">
+        {{ formatPercent(row.original.injuryCompanyRate) }} / {{ formatPercent(row.original.maternityCompanyRate) }}
+      </template>
+      <template #housingFundRate-cell="{ row }">
+        {{ formatPercent(row.original.housingFundPersonalRate) }} / {{ formatPercent(row.original.housingFundCompanyRate) }}
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="action-group">
+          <UButton color="primary" variant="ghost" size="sm" @click="open(row.original)">编辑</UButton>
+          <UButton color="error" variant="ghost" size="sm" @click="remove(row.original)">删除</UButton>
+        </div>
+      </template>
+    </UTable>
+
+    <UModal v-model:open="visible" :title="form.id ? '编辑参保城市' : '新增参保城市'">
+      <template #body>
+        <div class="form-grid">
+          <div class="field-block">
+            <label class="field-label">城市名称</label>
+            <UInput v-model="form.name" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">区划编码</label>
+            <UInput v-model="form.regionCode" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">社平工资参考</label>
+            <UInputNumber v-model="form.socialAvgSalary" :min="0" :step="100" />
+          </div>
+
+          <div class="field-block field-block-full">
+            <label class="field-label">养老保险比例</label>
+            <div class="pair-row">
+              <UInputNumber v-model="form.pensionPersonalRate" :min="0" :max="1" :step="0.001" />
+              <UInputNumber v-model="form.pensionCompanyRate" :min="0" :max="1" :step="0.001" />
+            </div>
+            <div class="pair-tip">个人 / 公司，输入 0.08 表示 8%</div>
+          </div>
+
+          <div class="field-block field-block-full">
+            <label class="field-label">医疗保险比例</label>
+            <div class="pair-row">
+              <UInputNumber v-model="form.medicalPersonalRate" :min="0" :max="1" :step="0.001" />
+              <UInputNumber v-model="form.medicalCompanyRate" :min="0" :max="1" :step="0.001" />
+            </div>
+          </div>
+
+          <div class="field-block field-block-full">
+            <label class="field-label">失业保险比例</label>
+            <div class="pair-row">
+              <UInputNumber v-model="form.unemploymentPersonalRate" :min="0" :max="1" :step="0.001" />
+              <UInputNumber v-model="form.unemploymentCompanyRate" :min="0" :max="1" :step="0.001" />
+            </div>
+          </div>
+
+          <div class="field-block field-block-full">
+            <label class="field-label">工伤 / 生育比例</label>
+            <div class="pair-row">
+              <UInputNumber v-model="form.injuryCompanyRate" :min="0" :max="1" :step="0.001" />
+              <UInputNumber v-model="form.maternityCompanyRate" :min="0" :max="1" :step="0.001" />
+            </div>
+            <div class="pair-tip">公司承担</div>
+          </div>
+
+          <div class="field-block field-block-full">
+            <label class="field-label">公积金比例</label>
+            <div class="pair-row">
+              <UInputNumber v-model="form.housingFundPersonalRate" :min="0" :max="1" :step="0.001" />
+              <UInputNumber v-model="form.housingFundCompanyRate" :min="0" :max="1" :step="0.001" />
+            </div>
+          </div>
+
+          <div class="field-block field-block-full">
+            <label class="field-label">备注</label>
+            <UTextarea v-model="form.remark" :rows="3" />
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="visible = false">取消</UButton>
+          <UButton color="primary" :loading="saving" @click="save">保存</UButton>
+        </div>
+      </template>
+    </UModal>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
-import { ElMessage, ElMessageBox } from "element-plus";
 
 type CityRow = {
   id?: number;
@@ -120,8 +143,25 @@ const defaultRates = {
   housingFundCompanyRate: 0.07,
 };
 
+const toast = useToast();
 const list = ref<CityRow[]>([]);
 const visible = ref(false);
+const loading = ref(false);
+const saving = ref(false);
+
+const columns: TableColumn<CityRow>[] = [
+  { accessorKey: "name", header: "城市" },
+  { accessorKey: "regionCode", header: "区划编码" },
+  { accessorKey: "socialAvgSalary", header: "社平工资参考" },
+  { accessorKey: "pensionRate", header: "养老(个人/公司)" },
+  { accessorKey: "medicalRate", header: "医疗(个人/公司)" },
+  { accessorKey: "unemploymentRate", header: "失业(个人/公司)" },
+  { accessorKey: "injuryRate", header: "工伤/生育(公司)" },
+  { accessorKey: "housingFundRate", header: "公积金(个人/公司)" },
+  { accessorKey: "remark", header: "备注" },
+  { accessorKey: "actions", header: "操作" },
+];
+
 const form = reactive({
   id: undefined as number | undefined,
   name: "",
@@ -158,8 +198,21 @@ function resetForm() {
   form.remark = "";
 }
 
+function formatAmount(value?: number | string) {
+  return Number(value || 0).toFixed(2);
+}
+
+function formatPercent(value?: number | string) {
+  return `${(Number(value || 0) * 100).toFixed(2)}%`;
+}
+
 async function load() {
-  list.value = (await http.get("/insured-cities")) as CityRow[];
+  loading.value = true;
+  try {
+    list.value = (await http.get("/insured-cities")) as CityRow[];
+  } finally {
+    loading.value = false;
+  }
 }
 
 function open(row?: CityRow) {
@@ -185,33 +238,37 @@ function open(row?: CityRow) {
   visible.value = true;
 }
 
-function formatPercent(value?: number | string) {
-  return `${(Number(value || 0) * 100).toFixed(2)}%`;
-}
-
 async function save() {
   if (!form.name.trim()) {
-    ElMessage.warning("请输入城市名称");
+    toast.add({ title: "请输入城市名称", color: "warning" });
     return;
   }
-  if (form.id) {
-    await http.put(`/insured-cities/${form.id}`, { ...form });
-  } else {
-    await http.post("/insured-cities", { ...form });
+
+  saving.value = true;
+  try {
+    if (form.id) {
+      await http.put(`/insured-cities/${form.id}`, { ...form });
+    } else {
+      await http.post("/insured-cities", { ...form });
+    }
+    toast.add({ title: "保存成功", color: "success" });
+    visible.value = false;
+    await load();
+  } finally {
+    saving.value = false;
   }
-  ElMessage.success("保存成功");
-  visible.value = false;
-  await load();
 }
 
 async function remove(row: CityRow) {
-  await ElMessageBox.confirm("确定删除该参保城市吗？", "提示");
+  const confirmed = window.confirm("确定删除该参保城市吗？");
+  if (!confirmed) return;
   await http.delete(`/insured-cities/${row.id}`);
-  ElMessage.success("已删除");
+  toast.add({ title: "已删除", color: "success" });
   await load();
 }
 
 resetForm();
+
 onMounted(load);
 </script>
 
@@ -220,17 +277,66 @@ onMounted(load);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.table-wrap {
+  overflow: hidden;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-block-full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #264334;
 }
 
 .pair-row {
   width: 100%;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .pair-tip {
-  color: #909399;
+  color: #6b7280;
   font-size: 12px;
-  margin-top: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .header-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .form-grid,
+  .pair-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

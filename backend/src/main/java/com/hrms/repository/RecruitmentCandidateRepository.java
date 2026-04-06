@@ -12,4 +12,7 @@ public interface RecruitmentCandidateRepository extends JpaRepository<Recruitmen
 
     @Transactional
     void deleteByPosition_Requirement_Id(Long requirementId);
+
+    @Transactional
+    void deleteByReferrerId(Long referrerId);
 }

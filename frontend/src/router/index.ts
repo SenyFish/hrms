@@ -3,6 +3,12 @@ import { useUserStore } from "@/stores/user";
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    }
+    return { top: 0, left: 0 };
+  },
   routes: [
     { path: "/login", name: "login", component: () => import("@/views/Login.vue") },
     {
@@ -19,15 +25,18 @@ const router = createRouter({
         { path: "/permission/menus", name: "menus", component: () => import("@/views/permission/Menus.vue") },
         { path: "/salary/records", name: "salaryRecords", component: () => import("@/views/salary/Records.vue") },
         { path: "/salary/cities", name: "cities", component: () => import("@/views/salary/Cities.vue") },
+        { path: "/salary/performance", name: "salaryPerformance", component: () => import("@/views/salary/Performance.vue") },
         { path: "/attendance/leaves", name: "leaves", component: () => import("@/views/attendance/Leaves.vue") },
         { path: "/attendance/records", name: "attRecords", component: () => import("@/views/attendance/Records.vue") },
-        { path: "/finance/expenses", name: "financeExpenses", component: () => import("@/views/finance/Expenses.vue") },
-        { path: "/finance/assets", name: "financeAssets", component: () => import("@/views/finance/Assets.vue") },
-        { path: "/finance/approvals", name: "financeApprovals", component: () => import("@/views/finance/Approvals.vue") },
+        { path: "/attendance/trips", name: "attendanceTrips", component: () => import("@/views/attendance/Trips.vue") },
         { path: "/recruitment/requirements", name: "recruitmentRequirements", component: () => import("@/views/recruitment/Requirements.vue") },
         { path: "/recruitment/positions", name: "recruitmentPositions", component: () => import("@/views/recruitment/Positions.vue") },
         { path: "/recruitment/candidates", name: "recruitmentCandidates", component: () => import("@/views/recruitment/Candidates.vue") },
         { path: "/recruitment/referrals", name: "recruitmentReferrals", component: () => import("@/views/recruitment/Candidates.vue") },
+        { path: "/relations/contracts", name: "relationContracts", component: () => import("@/views/relations/Contracts.vue") },
+        { path: "/relations/disputes", name: "relationDisputes", component: () => import("@/views/relations/Disputes.vue") },
+        { path: "/training/sessions", name: "trainingSessions", component: () => import("@/views/training/Sessions.vue") },
+        { path: "/training/promotions", name: "trainingPromotions", component: () => import("@/views/training/Promotions.vue") },
         { path: "/care/plans", name: "carePlans", component: () => import("@/views/care/Plans.vue") },
         { path: "/care/stats", name: "careStats", component: () => import("@/views/care/Stats.vue") },
       ],

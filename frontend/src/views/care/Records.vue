@@ -1,96 +1,107 @@
 <template>
-  <el-card>
+  <UCard variant="soft">
     <template #header>
       <div class="header-bar">
         <span>关怀记录</span>
-        <el-button type="primary" @click="open()">新增记录</el-button>
+        <UButton color="primary" icon="i-lucide-plus" @click="open()">新增记录</UButton>
       </div>
     </template>
 
     <div class="toolbar">
-      <el-input v-model="query.keyword" placeholder="请输入记录编号、员工姓名、类型或执行人" clearable style="width: 340px" @keyup.enter="search" />
-      <el-select v-model="query.status" clearable placeholder="状态" style="width: 140px" @change="search">
-        <el-option label="已执行" value="已执行" />
-        <el-option label="已跟进" value="已跟进" />
-      </el-select>
-      <el-button type="primary" @click="search">查询</el-button>
-      <el-button @click="resetSearch">重置</el-button>
+      <UInput
+        v-model="query.keyword"
+        class="toolbar-input"
+        size="lg"
+        variant="subtle"
+        icon="i-lucide-search"
+        placeholder="请输入记录编号、员工姓名、类型或执行人"
+        @keyup.enter="search"
+      />
+      <USelectMenu v-model="query.status" :items="statusOptions" class="status-select" @update:model-value="search" />
+      <UButton color="primary" @click="search">查询</UButton>
+      <UButton color="neutral" variant="soft" @click="resetSearch">重置</UButton>
     </div>
 
-    <el-table :data="rows" border>
-      <el-table-column prop="recordCode" label="记录编号" width="170" />
-      <el-table-column label="关怀员工" width="120">
-        <template #default="{ row }">{{ row.user?.realName || "-" }}</template>
-      </el-table-column>
-      <el-table-column label="关联计划" width="170">
-        <template #default="{ row }">{{ row.plan?.planCode || "-" }}</template>
-      </el-table-column>
-      <el-table-column prop="careType" label="关怀类型" width="120" />
-      <el-table-column label="执行时间" width="180">
-        <template #default="{ row }">{{ formatDateTime(row.careTime) }}</template>
-      </el-table-column>
-      <el-table-column prop="handlerName" label="执行人" width="120" />
-      <el-table-column prop="costAmount" label="实际花费" width="120" />
-      <el-table-column prop="status" label="状态" width="100" />
-      <el-table-column prop="content" label="关怀内容" min-width="220" show-overflow-tooltip />
-      <el-table-column label="操作" width="150" fixed="right">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="open(row)">编辑</el-button>
-          <el-button type="danger" link @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <UTable :data="rows" :columns="columns" :loading="loading" class="table-wrap">
+      <template #user-cell="{ row }">{{ row.original.user?.realName || "-" }}</template>
+      <template #plan-cell="{ row }">{{ row.original.plan?.planCode || "-" }}</template>
+      <template #careTime-cell="{ row }">{{ formatDateTime(row.original.careTime) }}</template>
+      <template #costAmount-cell="{ row }">¥{{ Number(row.original.costAmount || 0).toFixed(2) }}</template>
+      <template #status-cell="{ row }">
+        <UBadge :color="row.original.status === '已执行' ? 'success' : 'primary'" variant="soft">
+          {{ row.original.status || "-" }}
+        </UBadge>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="action-group">
+          <UButton color="primary" variant="ghost" size="sm" @click="open(row.original)">编辑</UButton>
+          <UButton color="error" variant="ghost" size="sm" @click="remove(row.original)">删除</UButton>
+        </div>
+      </template>
+    </UTable>
 
     <div class="pager">
-      <el-pagination v-model:current-page="query.page" v-model:page-size="query.size" background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10,20,50,100]" :total="total" @current-change="load" @size-change="handleSizeChange" />
+      <span class="pager-total">共 {{ total }} 条</span>
+      <UPagination v-model:page="query.page" :total="total" :items-per-page="query.size" show-edges @update:page="load" />
+      <USelectMenu v-model="query.size" :items="pageSizeOptions" value-key="value" label-key="label" class="size-select" @update:model-value="handleSizeChange" />
     </div>
 
-    <el-dialog v-model="visible" :title="form.id ? '编辑关怀记录' : '新增关怀记录'" width="660px">
-      <el-form :model="form" label-width="110px">
-        <el-form-item label="关联计划">
-          <el-select v-model="form.planId" clearable filterable style="width: 100%">
-            <el-option v-for="item in plans" :key="item.id" :label="`${item.planCode} ${item.user?.realName || ''}`" :value="item.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关怀员工">
-          <el-select v-model="form.userId" filterable style="width: 100%">
-            <el-option v-for="item in users" :key="item.id" :label="`${item.realName}（${item.employeeNo}）`" :value="item.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关怀类型">
-          <el-select v-model="form.careType" style="width: 100%">
-            <el-option label="生日慰问" value="生日慰问" />
-            <el-option label="节日关怀" value="节日关怀" />
-            <el-option label="入职回访" value="入职回访" />
-            <el-option label="困难帮扶" value="困难帮扶" />
-            <el-option label="日常关怀" value="日常关怀" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="执行时间">
-          <el-date-picker v-model="form.careTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss[Z]" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="执行人"><el-input v-model="form.handlerName" /></el-form-item>
-        <el-form-item label="实际花费"><el-input-number v-model="form.costAmount" :min="0" :precision="2" :step="100" style="width: 100%" /></el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status" style="width: 100%">
-            <el-option label="已执行" value="已执行" />
-            <el-option label="已跟进" value="已跟进" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关怀内容"><el-input v-model="form.content" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+    <UModal v-model:open="visible" :title="form.id ? '编辑关怀记录' : '新增关怀记录'">
+      <template #body>
+        <div class="form-grid">
+          <div class="field-block field-block-full">
+            <label class="field-label">关联计划</label>
+            <USelectMenu v-model="form.planId" :items="planOptions" value-key="id" label-key="label" searchable class="w-full" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">关怀员工</label>
+            <USelectMenu v-model="form.userId" :items="userOptions" value-key="id" label-key="label" searchable class="w-full" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">关怀类型</label>
+            <USelectMenu v-model="form.careType" :items="careTypeOptions" class="w-full" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">执行时间</label>
+            <UInput v-model="form.careTime" type="datetime-local" size="lg" variant="subtle" icon="i-lucide-clock-3" class="time-input" />
+            <span class="field-hint">记录本次关怀实际执行时间。</span>
+          </div>
+          <div class="field-block">
+            <label class="field-label">执行人</label>
+            <UInput v-model="form.handlerName" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">实际花费</label>
+            <UInputNumber v-model="form.costAmount" :min="0" :step="100" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">状态</label>
+            <USelectMenu v-model="form.status" :items="recordStatusOptions" class="w-full" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">关怀内容</label>
+            <UTextarea v-model="form.content" :rows="3" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">备注</label>
+            <UTextarea v-model="form.remark" :rows="2" />
+          </div>
+        </div>
       </template>
-    </el-dialog>
-  </el-card>
+      <template #footer>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="visible = false">取消</UButton>
+          <UButton color="primary" :loading="saving" @click="save">保存</UButton>
+        </div>
+      </template>
+    </UModal>
+  </UCard>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { computed, onMounted, reactive, ref } from "vue";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 
 type UserOption = { id: number; realName: string; employeeNo: string };
@@ -98,11 +109,15 @@ type PlanOption = Record<string, any> & { id: number; planCode: string };
 type RecordRow = Record<string, any> & { id?: number };
 type PageData = { list: RecordRow[]; total: number };
 
+const toast = useToast();
 const rows = ref<RecordRow[]>([]);
 const total = ref(0);
 const users = ref<UserOption[]>([]);
 const plans = ref<PlanOption[]>([]);
 const visible = ref(false);
+const loading = ref(false);
+const saving = ref(false);
+
 const query = reactive({ keyword: "", status: "", page: 1, size: 10 });
 const form = reactive({
   id: undefined as number | undefined,
@@ -116,6 +131,33 @@ const form = reactive({
   remark: "",
   costAmount: 0,
 });
+
+const pageSizeOptions = [
+  { label: "10 条/页", value: 10 },
+  { label: "20 条/页", value: 20 },
+  { label: "50 条/页", value: 50 },
+  { label: "100 条/页", value: 100 },
+];
+
+const statusOptions = ["", "已执行", "已跟进"];
+const careTypeOptions = ["生日慰问", "节日关怀", "入职回访", "困难帮扶", "日常关怀"];
+const recordStatusOptions = ["已执行", "已跟进"];
+
+const columns: TableColumn<RecordRow>[] = [
+  { accessorKey: "recordCode", header: "记录编号" },
+  { accessorKey: "user", header: "关怀员工" },
+  { accessorKey: "plan", header: "关联计划" },
+  { accessorKey: "careType", header: "关怀类型" },
+  { accessorKey: "careTime", header: "执行时间" },
+  { accessorKey: "handlerName", header: "执行人" },
+  { accessorKey: "costAmount", header: "实际花费" },
+  { accessorKey: "status", header: "状态" },
+  { accessorKey: "content", header: "关怀内容" },
+  { accessorKey: "actions", header: "操作" },
+];
+
+const userOptions = computed(() => users.value.map((item) => ({ id: item.id, label: `${item.realName}（${item.employeeNo}）` })));
+const planOptions = computed(() => plans.value.map((item) => ({ id: item.id, label: `${item.planCode} ${item.user?.realName || ""}` })));
 
 function resetForm() {
   form.id = undefined;
@@ -132,22 +174,27 @@ function resetForm() {
 
 function formatDateTime(value?: string) {
   if (!value) return "-";
-  return value.replace("T", " ").replace(".000+00:00", "");
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 async function load() {
-  const data = (await http.get("/care/records", { params: { ...query, keyword: query.keyword || undefined, status: query.status || undefined } })) as PageData;
-  rows.value = data.list || [];
-  total.value = data.total || 0;
+  loading.value = true;
+  try {
+    const data = (await http.get("/care/records", { params: { ...query, keyword: query.keyword || undefined, status: query.status || undefined } })) as PageData;
+    rows.value = data.list || [];
+    total.value = data.total || 0;
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function loadOptions() {
-  const [userList, planPage] = await Promise.all([
-    http.get("/users"),
-    http.get("/care/plans", { params: { page: 1, size: 200 } }),
-  ]);
+  const [userList, planPage] = await Promise.all([http.get("/users"), http.get("/care/plans", { params: { page: 1, size: 200 } })]);
   users.value = userList as UserOption[];
-  plans.value = ((planPage as { list: PlanOption[] }).list || []);
+  plans.value = (planPage as { list: PlanOption[] }).list || [];
 }
 
 function search() {
@@ -174,7 +221,7 @@ function open(row?: RecordRow) {
     form.planId = row.plan?.id;
     form.userId = row.user?.id;
     form.careType = row.careType || "日常关怀";
-    form.careTime = (row.careTime || "").replace(".000+00:00", "Z");
+    form.careTime = row.careTime ? String(row.careTime).slice(0, 16) : "";
     form.handlerName = row.handlerName || "";
     form.status = row.status || "已执行";
     form.content = row.content || "";
@@ -188,28 +235,34 @@ function open(row?: RecordRow) {
 
 async function save() {
   if (!form.userId) {
-    ElMessage.warning("请选择关怀员工");
+    toast.add({ title: "请选择关怀员工", color: "warning" });
     return;
   }
   if (!form.content.trim()) {
-    ElMessage.warning("请输入关怀内容");
+    toast.add({ title: "请输入关怀内容", color: "warning" });
     return;
   }
-  const payload = { ...form, careTime: form.careTime || undefined };
-  if (form.id) {
-    await http.put(`/care/records/${form.id}`, payload);
-  } else {
-    await http.post("/care/records", payload);
+  const payload = { ...form, careTime: form.careTime ? `${form.careTime}:00Z` : undefined };
+  saving.value = true;
+  try {
+    if (form.id) {
+      await http.put(`/care/records/${form.id}`, payload);
+    } else {
+      await http.post("/care/records", payload);
+    }
+    toast.add({ title: "保存成功", color: "success" });
+    visible.value = false;
+    await Promise.all([load(), loadOptions()]);
+  } finally {
+    saving.value = false;
   }
-  ElMessage.success("保存成功");
-  visible.value = false;
-  await Promise.all([load(), loadOptions()]);
 }
 
 async function remove(row: RecordRow) {
-  await ElMessageBox.confirm("确定删除这条关怀记录吗？", "提示");
+  const confirmed = window.confirm("确定删除这条关怀记录吗？");
+  if (!confirmed) return;
   await http.delete(`/care/records/${row.id}`);
-  ElMessage.success("已删除");
+  toast.add({ title: "已删除", color: "success" });
   await Promise.all([load(), loadOptions()]);
 }
 
@@ -219,8 +272,25 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.header-bar,.toolbar,.pager{display:flex}
-.header-bar{align-items:center;justify-content:space-between}
-.toolbar{gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.pager{justify-content:flex-end;margin-top:16px}
+.header-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.toolbar-input { width: 340px; }
+.status-select { width: 140px; }
+.table-wrap { overflow: hidden; }
+.action-group { display: flex; gap: 6px; }
+.pager { margin-top: 16px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.pager-total { color: #6b7280; font-size: 14px; }
+.size-select { width: 120px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.field-block { display: grid; gap: 8px; }
+.field-block-full { grid-column: 1 / -1; }
+.field-label { font-size: 14px; font-weight: 600; color: #264334; }
+.field-hint { font-size: 12px; color: #7b8a83; }
+.time-input :deep(input) { min-height: 44px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+@media (max-width: 900px) {
+  .toolbar-input, .status-select { width: 100%; }
+  .pager { flex-wrap: wrap; justify-content: flex-start; }
+  .form-grid { grid-template-columns: 1fr; }
+}
 </style>

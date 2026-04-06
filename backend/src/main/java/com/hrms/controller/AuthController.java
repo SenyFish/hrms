@@ -54,6 +54,7 @@ public class AuthController {
         profile.put("username", user.getUsername());
         profile.put("realName", user.getRealName());
         profile.put("employeeNo", user.getEmployeeNo());
+        profile.put("positionName", user.getPositionName());
         profile.put("departmentId", user.getDepartmentId());
         profile.put("phone", user.getPhone());
         profile.put("email", user.getEmail());

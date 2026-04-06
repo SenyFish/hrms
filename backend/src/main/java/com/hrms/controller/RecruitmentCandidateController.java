@@ -129,6 +129,8 @@ public class RecruitmentCandidateController {
         candidate.setStatus(hasText(body.getStatus()) ? body.getStatus().trim() : "待筛选");
         candidate.setResult(trimToNull(body.getResult()));
         candidate.setResumeRemark(trimToNull(body.getResumeRemark()));
+        candidate.setResumeFileId(body.getResumeFileId());
+        candidate.setResumeFileName(trimToNull(body.getResumeFileName()));
         candidate.setRemark(trimToNull(body.getRemark()));
         if (body.getReferrerId() != null) {
             User referrer = userRepository.findById(body.getReferrerId())
@@ -164,6 +166,8 @@ public class RecruitmentCandidateController {
         candidate.setSourceChannel("员工内推");
         candidate.setExpectedSalary(body.getExpectedSalary() != null ? body.getExpectedSalary() : BigDecimal.ZERO);
         candidate.setResumeRemark(trimToNull(body.getResumeRemark()));
+        candidate.setResumeFileId(body.getResumeFileId());
+        candidate.setResumeFileName(trimToNull(body.getResumeFileName()));
         candidate.setRemark(trimToNull(body.getRemark()));
         candidate.setPosition(resolvePosition(body.getPositionId(), true));
         candidate.setReferrerId(referrer.getId());
@@ -312,6 +316,8 @@ public class RecruitmentCandidateController {
         private String status;
         private String result;
         private String resumeRemark;
+        private Long resumeFileId;
+        private String resumeFileName;
         private String remark;
         private Long referrerId;
     }

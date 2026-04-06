@@ -1,118 +1,150 @@
 <template>
-  <div class="app-page">
-    <PageSection
-      eyebrow="System"
-      title="员工管理"
-      description="管理员工账号、角色、部门以及基础档案。首轮重构只替换界面层，保留现有用户接口和字段。"
-      flush
-    >
-      <template #actions>
-        <button class="frappe-button" data-variant="solid" type="button" @click="open()">新增员工</button>
+  <UCard variant="soft">
+    <template #header>
+      <div class="header-bar">
+        <span>员工管理</span>
+        <UButton color="primary" icon="i-lucide-plus" @click="open()">新增</UButton>
+      </div>
+    </template>
+
+    <div class="toolbar">
+      <UInput
+        v-model="query.keyword"
+        class="toolbar-input"
+        size="lg"
+        variant="subtle"
+        icon="i-lucide-search"
+        placeholder="请输入账号、姓名、工号、岗位、手机号等关键字"
+        @keyup.enter="search"
+      />
+      <UButton color="primary" @click="search">查询</UButton>
+      <UButton color="neutral" variant="soft" @click="resetSearch">重置</UButton>
+    </div>
+
+    <UTable :data="users" :columns="columns" :loading="loading" class="table-wrap">
+      <template #role-cell="{ row }">{{ row.original.role?.name || "-" }}</template>
+      <template #departmentId-cell="{ row }">{{ departmentName(row.original.departmentId) }}</template>
+      <template #birthday-cell="{ row }">{{ row.original.birthday || "-" }}</template>
+      <template #hireDate-cell="{ row }">{{ row.original.hireDate || "-" }}</template>
+      <template #positionName-cell="{ row }">{{ row.original.positionName || "-" }}</template>
+      <template #actions-cell="{ row }">
+        <div class="action-group">
+          <UButton color="primary" variant="ghost" size="sm" @click="open(row.original)">编辑</UButton>
+          <UButton color="error" variant="ghost" size="sm" @click="remove(row.original)">删除</UButton>
+        </div>
       </template>
+    </UTable>
 
-      <FilterToolbar>
-        <el-input v-model="query.keyword" class="page-field page-field--wide" placeholder="搜索账号、姓名、工号或手机号" />
-        <el-button type="primary" @click="search">查询</el-button>
-        <el-button @click="resetSearch">重置</el-button>
-      </FilterToolbar>
+    <div class="pager">
+      <span class="pager-total">共 {{ total }} 条</span>
+      <UPagination v-model:page="query.page" :total="total" :items-per-page="query.size" show-edges @update:page="loadUsers" />
+      <USelectMenu
+        v-model="query.size"
+        :items="pageSizeOptions"
+        value-key="value"
+        label-key="label"
+        class="size-select"
+        @update:model-value="handleSizeChange"
+      />
+    </div>
 
-      <div class="app-table">
-        <el-table :data="users" border>
-          <el-table-column prop="username" label="账号" width="140" />
-          <el-table-column prop="realName" label="姓名" width="120" />
-          <el-table-column prop="employeeNo" label="工号" width="130" />
-          <el-table-column label="角色" width="140">
-            <template #default="{ row }">{{ row.role?.name || "-" }}</template>
-          </el-table-column>
-          <el-table-column prop="departmentId" label="部门 ID" width="100" />
-          <el-table-column prop="phone" label="手机号" width="150" />
-          <el-table-column label="生日" width="130">
-            <template #default="{ row }">{{ row.birthday || "-" }}</template>
-          </el-table-column>
-          <el-table-column label="入职日期" width="130">
-            <template #default="{ row }">{{ row.hireDate || "-" }}</template>
-          </el-table-column>
-          <el-table-column label="操作" width="160" fixed="right">
-            <template #default="{ row }">
-              <el-button type="primary" link @click="open(row)">编辑</el-button>
-              <el-button type="danger" link @click="remove(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div class="page-pager">
-        <el-pagination
-          v-model:current-page="query.page"
-          v-model:page-size="query.size"
-          background
-          layout="total, sizes, prev, pager, next, jumper"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          @current-change="loadUsers"
-          @size-change="handleSizeChange"
-        />
-      </div>
-    </PageSection>
-
-    <el-dialog v-model="visible" :title="form.id ? '编辑员工' : '新增员工'" width="620px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-        <el-form-item v-if="!form.id" label="用户名" prop="username">
-          <el-input v-model="form.username" />
-        </el-form-item>
-        <el-form-item :label="form.id ? '密码(可选)' : '密码'" prop="password">
-          <el-input v-model="form.password" type="password" show-password :placeholder="form.id ? '留空表示不修改' : '请输入初始密码'" />
-        </el-form-item>
-        <el-form-item label="姓名" prop="realName">
-          <el-input v-model="form.realName" />
-        </el-form-item>
-        <el-form-item label="工号">
-          <el-input v-model="form.employeeNo" />
-        </el-form-item>
-        <el-form-item label="部门" prop="departmentId">
-          <el-select v-model="form.departmentId" placeholder="选择部门" style="width: 100%">
-            <el-option v-for="d in depts" :key="d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="角色" prop="roleId">
-          <el-select v-model="form.roleId" placeholder="选择角色" style="width: 100%">
-            <el-option v-for="r in roles" :key="r.id" :label="r.name" :value="r.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="手机">
-          <el-input v-model="form.phone" />
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="form.email" />
-        </el-form-item>
-        <el-form-item label="生日">
-          <el-date-picker v-model="form.birthday" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="入职日期">
-          <el-date-picker v-model="form.hireDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-        </el-form-item>
-      </el-form>
+    <UModal v-model:open="visible" :title="form.id ? '编辑员工' : '新增员工'">
+      <template #body>
+        <div class="form-grid">
+          <div v-if="!form.id" class="field-block">
+            <label class="field-label">用户名</label>
+            <UInput v-model="form.username" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">{{ form.id ? "密码（可选）" : "密码" }}</label>
+            <UInput v-model="form.password" type="password" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">姓名</label>
+            <UInput v-model="form.realName" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">工号</label>
+            <UInput v-model="form.employeeNo" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">岗位</label>
+            <UInput v-model="form.positionName" placeholder="例如：前端工程师、招聘专员" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">部门</label>
+            <USelectMenu v-model="form.departmentId" :items="depts" value-key="id" label-key="name" class="w-full" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">角色</label>
+            <USelectMenu v-model="form.roleId" :items="roles" value-key="id" label-key="name" class="w-full" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">手机</label>
+            <UInput v-model="form.phone" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">邮箱</label>
+            <UInput v-model="form.email" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">生日</label>
+            <UInput v-model="form.birthday" type="date" size="lg" variant="subtle" icon="i-lucide-calendar-days" class="time-input" />
+            <span class="field-hint">用于首页生日关怀提醒。</span>
+          </div>
+          <div class="field-block">
+            <label class="field-label">入职日期</label>
+            <UInput v-model="form.hireDate" type="date" size="lg" variant="subtle" icon="i-lucide-briefcase-business" class="time-input" />
+            <span class="field-hint">用于首页入职周年提醒。</span>
+          </div>
+        </div>
+      </template>
       <template #footer>
-        <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="visible = false">取消</UButton>
+          <UButton color="primary" :loading="saving" @click="save">保存</UButton>
+        </div>
       </template>
-    </el-dialog>
-  </div>
+    </UModal>
+
+    <UModal v-model:open="deleteVisible" title="确认删除员工">
+      <template #body>
+        <div class="delete-dialog">
+          <div class="delete-icon-wrap">
+            <UIcon name="i-lucide-triangle-alert" class="delete-icon" />
+          </div>
+          <div class="delete-copy">
+            <div class="delete-title">删除后将同步清理该员工关联业务数据</div>
+            <div class="delete-desc">
+              确定删除
+              <strong>{{ deleteTarget?.realName || deleteTarget?.username || "该员工" }}</strong>
+              吗？此操作无法撤销。
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="deleteVisible = false">取消</UButton>
+          <UButton color="error" :loading="deleting" @click="confirmRemove">确认删除</UButton>
+        </div>
+      </template>
+    </UModal>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import type { FormInstance, FormRules } from "element-plus";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
-import FilterToolbar from "@/components/ui/FilterToolbar.vue";
-import PageSection from "@/components/ui/PageSection.vue";
 
 type UserRow = {
   id?: number;
   username?: string;
   realName?: string;
   employeeNo?: string;
+  positionName?: string;
   departmentId?: number;
   phone?: string;
   email?: string;
@@ -126,24 +158,51 @@ type UserListResponse = {
   total: number;
 };
 
+const toast = useToast();
 const users = ref<UserRow[]>([]);
 const total = ref(0);
 const depts = ref<Array<{ id: number; name: string }>>([]);
 const roles = ref<Array<{ id: number; name: string }>>([]);
 const visible = ref(false);
+const deleteVisible = ref(false);
 const saving = ref(false);
-const formRef = ref<FormInstance>();
+const deleting = ref(false);
+const loading = ref(false);
+const deleteTarget = ref<UserRow | null>(null);
+
+const pageSizeOptions = [
+  { label: "10 条/页", value: 10 },
+  { label: "20 条/页", value: 20 },
+  { label: "50 条/页", value: 50 },
+  { label: "100 条/页", value: 100 },
+];
+
+const columns: TableColumn<UserRow>[] = [
+  { accessorKey: "username", header: "账号" },
+  { accessorKey: "realName", header: "姓名" },
+  { accessorKey: "employeeNo", header: "工号" },
+  { accessorKey: "positionName", header: "岗位" },
+  { accessorKey: "role", header: "角色" },
+  { accessorKey: "departmentId", header: "部门" },
+  { accessorKey: "phone", header: "手机号" },
+  { accessorKey: "birthday", header: "生日" },
+  { accessorKey: "hireDate", header: "入职日期" },
+  { accessorKey: "actions", header: "操作" },
+];
+
 const query = reactive({
   keyword: "",
   page: 1,
   size: 10,
 });
+
 const form = reactive({
   id: undefined as number | undefined,
   username: "",
   password: "",
   realName: "",
   employeeNo: "",
+  positionName: "",
   departmentId: undefined as number | undefined,
   roleId: undefined as number | undefined,
   phone: "",
@@ -152,40 +211,34 @@ const form = reactive({
   hireDate: "",
 });
 
-const rules: FormRules = {
-  username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
-  realName: [{ required: true, message: "请输入姓名", trigger: "blur" }],
-  password: [
-    {
-      validator: (_rule, value: string, callback) => {
-        if (!form.id && (!value || !value.trim())) {
-          callback(new Error("新增员工必须设置密码"));
-          return;
-        }
-        callback();
-      },
-      trigger: "blur",
-    },
-  ],
-  departmentId: [{ required: true, message: "请选择部门", trigger: "change" }],
-  roleId: [{ required: true, message: "请选择角色", trigger: "change" }],
-};
-
 async function loadUsers() {
-  const data = (await http.get("/users", {
-    params: {
-      keyword: query.keyword || undefined,
-      page: query.page,
-      size: query.size,
-    },
-  })) as UserListResponse;
-  users.value = data.list || [];
-  total.value = data.total || 0;
+  loading.value = true;
+  try {
+    const data = (await http.get("/users", {
+      params: {
+        keyword: query.keyword || undefined,
+        page: query.page,
+        size: query.size,
+      },
+    })) as UserListResponse;
+    users.value = data.list || [];
+    total.value = data.total || 0;
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function loadOptions() {
-  depts.value = (await http.get("/departments")) as typeof depts.value;
-  roles.value = (await http.get("/roles")) as typeof roles.value;
+  try {
+    const [departmentList, roleList] = await Promise.all([http.get("/departments"), http.get("/roles")]);
+    depts.value = departmentList as typeof depts.value;
+    roles.value = roleList as typeof roles.value;
+  } catch (error: unknown) {
+    toast.add({
+      title: error instanceof Error ? error.message : "部门或角色选项加载失败",
+      color: "error",
+    });
+  }
 }
 
 function search() {
@@ -211,12 +264,17 @@ function resetForm() {
   form.password = "";
   form.realName = "";
   form.employeeNo = "";
+  form.positionName = "";
   form.departmentId = undefined;
   form.roleId = undefined;
   form.phone = "";
   form.email = "";
   form.birthday = "";
   form.hireDate = "";
+}
+
+function departmentName(id?: number) {
+  return depts.value.find((item) => item.id === id)?.name || "-";
 }
 
 function open(row?: UserRow) {
@@ -226,6 +284,7 @@ function open(row?: UserRow) {
     form.password = "";
     form.realName = row.realName || "";
     form.employeeNo = row.employeeNo || "";
+    form.positionName = row.positionName || "";
     form.departmentId = row.departmentId;
     form.roleId = row.role?.id;
     form.phone = row.phone || "";
@@ -239,35 +298,75 @@ function open(row?: UserRow) {
 }
 
 async function save() {
-  if (!formRef.value) return;
+  if (!form.realName.trim()) {
+    toast.add({ title: "请输入姓名", color: "warning" });
+    return;
+  }
+  if (!form.id && !form.username.trim()) {
+    toast.add({ title: "请输入用户名", color: "warning" });
+    return;
+  }
+  if (!form.id && !form.password.trim()) {
+    toast.add({ title: "新增员工必须设置密码", color: "warning" });
+    return;
+  }
+  if (!form.departmentId || !form.roleId) {
+    toast.add({ title: "请选择部门和角色", color: "warning" });
+    return;
+  }
+
+  saving.value = true;
   try {
-    await formRef.value.validate();
-    saving.value = true;
     const payload = { ...form };
-    const savedUser = (form.id ? await http.put(`/users/${form.id}`, payload) : await http.post("/users", payload)) as UserRow;
+    let savedUser: UserRow;
+    if (form.id) {
+      savedUser = (await http.put(`/users/${form.id}`, payload)) as UserRow;
+    } else {
+      savedUser = (await http.post("/users", payload)) as UserRow;
+    }
 
     if ((savedUser.birthday || "") !== (form.birthday || "") || (savedUser.hireDate || "") !== (form.hireDate || "")) {
       throw new Error("员工日期信息未成功更新，请重试");
     }
 
-    ElMessage.success("保存成功");
+    toast.add({ title: "保存成功", color: "success" });
     visible.value = false;
     await loadUsers();
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : "保存失败");
+    toast.add({
+      title: error instanceof Error ? error.message : "保存失败",
+      color: "error",
+    });
   } finally {
     saving.value = false;
   }
 }
 
-async function remove(row: UserRow) {
-  await ElMessageBox.confirm("确定删除该员工吗？", "提示");
-  await http.delete(`/users/${row.id}`);
-  ElMessage.success("已删除");
-  if (users.value.length === 1 && query.page > 1) {
-    query.page -= 1;
+function remove(row: UserRow) {
+  deleteTarget.value = row;
+  deleteVisible.value = true;
+}
+
+async function confirmRemove() {
+  if (!deleteTarget.value?.id) return;
+  deleting.value = true;
+  try {
+    await http.delete(`/users/${deleteTarget.value.id}`);
+    toast.add({ title: "已删除", color: "success" });
+    deleteVisible.value = false;
+    deleteTarget.value = null;
+    if (users.value.length === 1 && query.page > 1) {
+      query.page -= 1;
+    }
+    await loadUsers();
+  } catch (error: unknown) {
+    toast.add({
+      title: error instanceof Error ? error.message : "删除失败",
+      color: "error",
+    });
+  } finally {
+    deleting.value = false;
   }
-  await loadUsers();
 }
 
 onMounted(async () => {
@@ -276,17 +375,136 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-field {
-  min-width: 220px;
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.page-field--wide {
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbar-input {
   width: 320px;
 }
 
-.page-pager {
+.table-wrap {
+  overflow: hidden;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
+.pager {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.pager-total {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.size-select {
+  width: 120px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #264334;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #7b8a83;
+}
+
+.time-input :deep(input) {
+  min-height: 44px;
+}
+
+.modal-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 18px;
+  gap: 10px;
+}
+
+.delete-dialog {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 6px 2px;
+}
+
+.delete-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.delete-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.delete-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.delete-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #173127;
+}
+
+.delete-desc {
+  line-height: 1.7;
+  color: #6b7280;
+}
+
+.delete-desc strong {
+  color: #173127;
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-input {
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

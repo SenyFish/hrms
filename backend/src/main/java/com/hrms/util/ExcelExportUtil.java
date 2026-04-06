@@ -69,6 +69,49 @@ public final class ExcelExportUtil {
         }
     }
 
+    public static byte[] salaryPayslip(SalaryRecord record) {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            Sheet sh = wb.createSheet("工资条");
+            String[][] rows = new String[][]{
+                    {"员工姓名", record.getUser() != null ? text(record.getUser().getRealName()) : ""},
+                    {"工号", record.getUser() != null ? text(record.getUser().getEmployeeNo()) : ""},
+                    {"工资月份", text(record.getSalaryMonth())},
+                    {"参保城市", record.getInsuredCity() != null ? text(record.getInsuredCity().getName()) : ""},
+                    {"基本工资", String.valueOf(number(record.getBaseSalary()))},
+                    {"社保基数", String.valueOf(number(record.getSocialSecurityBase()))},
+                    {"公积金基数", String.valueOf(number(record.getHousingFundBase()))},
+                    {"养老保险（个人）", String.valueOf(number(record.getPensionPersonal()))},
+                    {"养老保险（公司）", String.valueOf(number(record.getPensionCompany()))},
+                    {"医疗保险（个人）", String.valueOf(number(record.getMedicalPersonal()))},
+                    {"医疗保险（公司）", String.valueOf(number(record.getMedicalCompany()))},
+                    {"失业保险（个人）", String.valueOf(number(record.getUnemploymentPersonal()))},
+                    {"失业保险（公司）", String.valueOf(number(record.getUnemploymentCompany()))},
+                    {"工伤保险（公司）", String.valueOf(number(record.getInjuryCompany()))},
+                    {"生育保险（公司）", String.valueOf(number(record.getMaternityCompany()))},
+                    {"公积金（个人）", String.valueOf(number(record.getHousingFundPersonal()))},
+                    {"公积金（公司）", String.valueOf(number(record.getHousingFundCompany()))},
+                    {"个人扣缴合计", String.valueOf(personalDeduction(record))},
+                    {"公司承担合计", String.valueOf(companyContribution(record))},
+                    {"税前应发（基本工资）", String.valueOf(number(record.getBaseSalary()))},
+                    {"扣除个缴后实发参考", String.valueOf(netAmount(record))},
+                    {"备注", text(record.getRemark())}
+            };
+
+            for (int i = 0; i < rows.length; i++) {
+                Row row = sh.createRow(i);
+                row.createCell(0).setCellValue(rows[i][0]);
+                row.createCell(1).setCellValue(rows[i][1]);
+            }
+
+            sh.autoSizeColumn(0);
+            sh.autoSizeColumn(1);
+            wb.write(bos);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("导出工资条失败", e);
+        }
+    }
+
     public static byte[] attendanceMonthReport(String title, List<AttendanceRecord> rows) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             Sheet sh = wb.createSheet(title);
@@ -141,6 +184,26 @@ public final class ExcelExportUtil {
 
     private static double number(java.math.BigDecimal value) {
         return value != null ? value.doubleValue() : 0D;
+    }
+
+    private static double personalDeduction(SalaryRecord record) {
+        return number(record.getPensionPersonal())
+                + number(record.getMedicalPersonal())
+                + number(record.getUnemploymentPersonal())
+                + number(record.getHousingFundPersonal());
+    }
+
+    private static double companyContribution(SalaryRecord record) {
+        return number(record.getPensionCompany())
+                + number(record.getMedicalCompany())
+                + number(record.getUnemploymentCompany())
+                + number(record.getInjuryCompany())
+                + number(record.getMaternityCompany())
+                + number(record.getHousingFundCompany());
+    }
+
+    private static double netAmount(SalaryRecord record) {
+        return number(record.getBaseSalary()) - personalDeduction(record);
     }
 
     private static String text(String value) {

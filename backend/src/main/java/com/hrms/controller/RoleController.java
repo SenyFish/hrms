@@ -30,54 +30,58 @@ public class RoleController {
 
     @GetMapping
     public ApiResponse<List<Role>> list(@AuthenticationPrincipal LoginUser loginUser) {
-        assertAdmin(loginUser);
+        assertAdminOrHr(loginUser);
         return ApiResponse.ok(roleRepository.findAll());
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Map<String, Object>> get(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
-        assertAdmin(loginUser);
-        Role r = roleRepository.findById(id).orElseThrow();
+    public ApiResponse<Map<String, Object>> get(@PathVariable Long id,
+                                                @AuthenticationPrincipal LoginUser loginUser) {
+        assertAdminOrHr(loginUser);
+        Role role = roleRepository.findById(id).orElseThrow();
         Map<String, Object> map = new HashMap<>();
-        map.put("id", r.getId());
-        map.put("name", r.getName());
-        map.put("code", r.getCode());
-        map.put("description", r.getDescription());
-        map.put("menuIds", r.getMenus().stream().map(Menu::getId).collect(Collectors.toList()));
+        map.put("id", role.getId());
+        map.put("name", role.getName());
+        map.put("code", role.getCode());
+        map.put("description", role.getDescription());
+        map.put("menuIds", role.getMenus().stream().map(Menu::getId).collect(Collectors.toList()));
         return ApiResponse.ok(map);
     }
 
     @PostMapping
-    public ApiResponse<Role> create(@RequestBody RoleSave body, @AuthenticationPrincipal LoginUser loginUser) {
+    public ApiResponse<Role> create(@RequestBody RoleSave body,
+                                    @AuthenticationPrincipal LoginUser loginUser) {
         assertAdmin(loginUser);
-        Role r = new Role();
-        r.setName(body.getName());
-        r.setCode(body.getCode());
-        r.setDescription(body.getDescription());
+        Role role = new Role();
+        role.setName(body.getName());
+        role.setCode(body.getCode());
+        role.setDescription(body.getDescription());
         if (body.getMenuIds() != null) {
-            r.setMenus(loadMenus(body.getMenuIds()));
+            role.setMenus(loadMenus(body.getMenuIds()));
         }
-        return ApiResponse.ok(roleRepository.save(r));
+        return ApiResponse.ok(roleRepository.save(role));
     }
 
     @PutMapping("/{id}")
     @Transactional
-    public ApiResponse<Role> update(@PathVariable Long id, @RequestBody RoleSave body,
+    public ApiResponse<Role> update(@PathVariable Long id,
+                                    @RequestBody RoleSave body,
                                     @AuthenticationPrincipal LoginUser loginUser) {
         assertAdmin(loginUser);
-        Role r = roleRepository.findById(id).orElseThrow();
-        r.setName(body.getName());
-        r.setCode(body.getCode());
-        r.setDescription(body.getDescription());
+        Role role = roleRepository.findById(id).orElseThrow();
+        role.setName(body.getName());
+        role.setCode(body.getCode());
+        role.setDescription(body.getDescription());
         if (body.getMenuIds() != null) {
-            r.getMenus().clear();
-            r.getMenus().addAll(loadMenus(body.getMenuIds()));
+            role.getMenus().clear();
+            role.getMenus().addAll(loadMenus(body.getMenuIds()));
         }
-        return ApiResponse.ok(roleRepository.save(r));
+        return ApiResponse.ok(roleRepository.save(role));
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
+    public ApiResponse<Void> delete(@PathVariable Long id,
+                                    @AuthenticationPrincipal LoginUser loginUser) {
         assertAdmin(loginUser);
         roleRepository.deleteById(id);
         return ApiResponse.ok();
@@ -85,15 +89,29 @@ public class RoleController {
 
     private Set<Menu> loadMenus(List<Long> ids) {
         Set<Menu> set = new HashSet<>();
-        for (Long mid : ids) {
-            menuRepository.findById(mid).ifPresent(set::add);
+        for (Long menuId : ids) {
+            menuRepository.findById(menuId).ifPresent(set::add);
         }
         return set;
     }
 
-    private static void assertAdmin(LoginUser u) {
-        if (u == null || !"ADMIN".equals(u.getRoleCode())) {
+    private static boolean isAdmin(LoginUser user) {
+        return user != null && "ADMIN".equals(user.getRoleCode());
+    }
+
+    private static boolean isHr(LoginUser user) {
+        return user != null && "HR".equals(user.getRoleCode());
+    }
+
+    private static void assertAdmin(LoginUser user) {
+        if (!isAdmin(user)) {
             throw new AccessDeniedException("需要管理员权限");
+        }
+    }
+
+    private static void assertAdminOrHr(LoginUser user) {
+        if (!isAdmin(user) && !isHr(user)) {
+            throw new AccessDeniedException("需要管理员或人事权限");
         }
     }
 

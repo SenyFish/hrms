@@ -10,3 +10,7 @@ backend/run.log
 backend/spring-boot-run.log
 frontend/vite-dev.log
 *.xlsx
+hrms-uploads/
+deploy/sql/
+.env
+docker-data/

@@ -1,109 +1,180 @@
 <template>
-  <div class="app-page">
-    <PageSection
-      eyebrow="Attendance"
-      title="请假审批"
-      :description="isHr ? '处理待审批请假并查看全量请假流转。' : '发起个人请假并跟踪当前审批状态。'"
-      flush
-    >
-      <template #actions>
-        <el-radio-group v-if="isHr" v-model="filter" @change="search">
-          <el-radio-button label="待审批">待审批</el-radio-button>
-          <el-radio-button label="">全部</el-radio-button>
-        </el-radio-group>
-        <button v-else class="frappe-button" data-variant="solid" type="button" @click="applyVisible = true">发起请假</button>
+  <UCard variant="soft">
+    <template #header>
+      <div class="header-bar">
+        <span>请假审批</span>
+        <div v-if="isHr" class="status-switch">
+          <UButton
+            v-for="item in filterOptions"
+            :key="item.value || 'all'"
+            :color="filter === item.value ? 'primary' : 'neutral'"
+            :variant="filter === item.value ? 'solid' : 'soft'"
+            size="sm"
+            @click="switchFilter(item.value)"
+          >
+            {{ item.label }}
+          </UButton>
+        </div>
+      </div>
+    </template>
+
+    <div class="toolbar">
+      <UInput
+        v-model="query.keyword"
+        class="toolbar-input"
+        size="lg"
+        variant="subtle"
+        icon="i-lucide-search"
+        placeholder="请输入员工、请假类型、原因、状态关键字"
+        @keyup.enter="search"
+      />
+      <UButton color="primary" @click="search">查询</UButton>
+      <UButton color="neutral" variant="soft" @click="resetSearch">重置</UButton>
+      <UButton v-if="!isHr" color="primary" icon="i-lucide-plus" @click="applyVisible = true">发起请假</UButton>
+    </div>
+
+    <UTable :data="rows" :columns="columns" :loading="loading" class="table-wrap">
+      <template #user-cell="{ row }">{{ row.original.user?.realName || "-" }}</template>
+      <template #startTime-cell="{ row }">{{ fmt(row.original.startTime) }}</template>
+      <template #endTime-cell="{ row }">{{ fmt(row.original.endTime) }}</template>
+      <template #status-cell="{ row }">
+        <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status || "-" }}</UBadge>
       </template>
+      <template #actions-cell="{ row }">
+        <div v-if="isHr" class="action-group">
+          <UButton
+            v-if="row.original.status === '待审批'"
+            color="success"
+            variant="ghost"
+            size="sm"
+            @click="approve(row.original, true)"
+          >
+            通过
+          </UButton>
+          <UButton
+            v-if="row.original.status === '待审批'"
+            color="error"
+            variant="ghost"
+            size="sm"
+            @click="approve(row.original, false)"
+          >
+            驳回
+          </UButton>
+        </div>
+      </template>
+    </UTable>
 
-      <FilterToolbar>
-        <el-input v-model="query.keyword" class="page-field page-field--wide" placeholder="搜索员工、请假类型、原因或状态" />
-        <el-button type="primary" @click="search">查询</el-button>
-        <el-button @click="resetSearch">重置</el-button>
-      </FilterToolbar>
+    <div class="pager">
+      <span class="pager-total">共 {{ total }} 条</span>
+      <UPagination v-model:page="query.page" :total="total" :items-per-page="query.size" show-edges @update:page="load" />
+      <USelectMenu
+        v-model="query.size"
+        :items="pageSizeOptions"
+        value-key="value"
+        label-key="label"
+        class="size-select"
+        @update:model-value="handleSizeChange"
+      />
+    </div>
 
-      <div class="app-table">
-        <el-table :data="rows" border>
-          <el-table-column prop="user.realName" label="员工" width="120" />
-          <el-table-column prop="leaveType" label="类型" width="120" />
-          <el-table-column label="开始时间" width="180">
-            <template #default="{ row }">{{ fmt(row.startTime) }}</template>
-          </el-table-column>
-          <el-table-column label="结束时间" width="180">
-            <template #default="{ row }">{{ fmt(row.endTime) }}</template>
-          </el-table-column>
-          <el-table-column prop="reason" label="原因" />
-          <el-table-column label="状态" width="120">
-            <template #default="{ row }">
-              <span class="pill-tag" :class="statusClass(String(row.status || ''))">{{ row.status }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column v-if="isHr" label="操作" width="180">
-            <template #default="{ row }">
-              <el-button v-if="row.status === '待审批'" type="success" link @click="approve(row, true)">通过</el-button>
-              <el-button v-if="row.status === '待审批'" type="danger" link @click="approve(row, false)">驳回</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div class="page-pager">
-        <el-pagination
-          v-model:current-page="query.page"
-          v-model:page-size="query.size"
-          background
-          layout="total, sizes, prev, pager, next, jumper"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          @current-change="load"
-          @size-change="handleSizeChange"
-        />
-      </div>
-    </PageSection>
-
-    <el-dialog v-model="applyVisible" title="请假申请" width="520px">
-      <el-form :model="apply" label-width="90px">
-        <el-form-item label="类型"><el-input v-model="apply.leaveType" /></el-form-item>
-        <el-form-item label="开始"><el-date-picker v-model="apply.start" type="datetime" style="width: 100%" /></el-form-item>
-        <el-form-item label="结束"><el-date-picker v-model="apply.end" type="datetime" style="width: 100%" /></el-form-item>
-        <el-form-item label="原因"><el-input v-model="apply.reason" type="textarea" /></el-form-item>
-      </el-form>
+    <UModal v-model:open="applyVisible" title="请假申请">
+      <template #body>
+        <div class="form-grid">
+          <div class="field-block">
+            <label class="field-label">类型</label>
+            <UInput v-model="apply.leaveType" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">开始时间</label>
+            <UInput v-model="apply.start" type="datetime-local" size="lg" variant="subtle" icon="i-lucide-clock-3" class="time-input" />
+            <span class="field-hint">按实际请假开始时间选择。</span>
+          </div>
+          <div class="field-block">
+            <label class="field-label">结束时间</label>
+            <UInput v-model="apply.end" type="datetime-local" size="lg" variant="subtle" icon="i-lucide-clock-4" class="time-input" />
+            <span class="field-hint">结束时间需晚于开始时间。</span>
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">原因</label>
+            <UTextarea v-model="apply.reason" :rows="3" />
+          </div>
+        </div>
+      </template>
       <template #footer>
-        <el-button @click="applyVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitApply">提交</el-button>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="applyVisible = false">取消</UButton>
+          <UButton color="primary" :loading="submitting" @click="submitApply">提交</UButton>
+        </div>
       </template>
-    </el-dialog>
-  </div>
+    </UModal>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
-import FilterToolbar from "@/components/ui/FilterToolbar.vue";
-import PageSection from "@/components/ui/PageSection.vue";
 
-type LeaveRow = Record<string, unknown> & { id?: number; status?: string };
+type LeaveRow = Record<string, unknown> & {
+  id?: number;
+  status?: string;
+  user?: { realName?: string };
+  leaveType?: string;
+  startTime?: string;
+  endTime?: string;
+  reason?: string;
+};
 type LeaveListResponse = {
   list: LeaveRow[];
   total: number;
+  page: number;
+  size: number;
 };
 
+const toast = useToast();
 const store = useUserStore();
 const roleCode = computed(() => store.profile?.roleCode as string);
 const isHr = computed(() => roleCode.value === "ADMIN" || roleCode.value === "HR");
+
+const pageSizeOptions = [
+  { label: "10 条/页", value: 10 },
+  { label: "20 条/页", value: 20 },
+  { label: "50 条/页", value: 50 },
+  { label: "100 条/页", value: 100 },
+];
+
+const filterOptions = [
+  { label: "待审批", value: "待审批" },
+  { label: "全部", value: "" },
+];
+
+const columns: TableColumn<LeaveRow>[] = [
+  { accessorKey: "user", header: "员工" },
+  { accessorKey: "leaveType", header: "类型" },
+  { accessorKey: "startTime", header: "开始时间" },
+  { accessorKey: "endTime", header: "结束时间" },
+  { accessorKey: "reason", header: "原因" },
+  { accessorKey: "status", header: "状态" },
+  { accessorKey: "actions", header: "操作" },
+];
+
 const filter = ref("待审批");
 const rows = ref<LeaveRow[]>([]);
 const total = ref(0);
+const loading = ref(false);
+const applyVisible = ref(false);
+const submitting = ref(false);
 const query = reactive({
   keyword: "",
   page: 1,
   size: 10,
 });
-const applyVisible = ref(false);
 const apply = reactive({
   leaveType: "事假",
-  start: new Date(),
-  end: new Date(),
+  start: new Date().toISOString().slice(0, 16),
+  end: new Date().toISOString().slice(0, 16),
   reason: "",
 });
 
@@ -112,29 +183,38 @@ function fmt(v: unknown) {
   return new Date(v as string).toLocaleString("zh-CN");
 }
 
-function statusClass(status: string) {
-  if (status === "待审批") return "pill-tag--warning";
-  if (status === "已通过") return "pill-tag--success";
-  if (status === "已驳回") return "pill-tag--danger";
-  return "pill-tag--neutral";
+function statusColor(status?: string) {
+  if (status === "已通过") return "success";
+  if (status === "已驳回") return "error";
+  return "warning";
 }
 
 async function load() {
-  const params = {
-    keyword: query.keyword || undefined,
-    page: query.page,
-    size: query.size,
-  } as Record<string, string | number | undefined>;
+  loading.value = true;
+  try {
+    const params = {
+      keyword: query.keyword || undefined,
+      page: query.page,
+      size: query.size,
+    } as Record<string, string | number | undefined>;
 
-  let data: LeaveListResponse;
-  if (isHr.value) {
-    params.status = filter.value || undefined;
-    data = (await http.get("/leaves", { params })) as LeaveListResponse;
-  } else {
-    data = (await http.get("/leaves/my", { params })) as LeaveListResponse;
+    let data: LeaveListResponse;
+    if (isHr.value) {
+      params.status = filter.value || undefined;
+      data = (await http.get("/leaves", { params })) as LeaveListResponse;
+    } else {
+      data = (await http.get("/leaves/my", { params })) as LeaveListResponse;
+    }
+    rows.value = data.list || [];
+    total.value = data.total || 0;
+  } finally {
+    loading.value = false;
   }
-  rows.value = data.list || [];
-  total.value = data.total || 0;
+}
+
+function switchFilter(value: string) {
+  filter.value = value;
+  search();
 }
 
 function search() {
@@ -159,37 +239,136 @@ function handleSizeChange() {
 
 async function approve(row: LeaveRow, ok: boolean) {
   await http.post(`/leaves/${row.id}/approve`, { approved: ok, remark: ok ? "同意" : "不同意" });
-  ElMessage.success("已处理");
+  toast.add({ title: "已处理", color: "success" });
   await load();
 }
 
 async function submitApply() {
-  await http.post("/leaves", {
-    leaveType: apply.leaveType,
-    startTime: (apply.start as Date).toISOString(),
-    endTime: (apply.end as Date).toISOString(),
-    reason: apply.reason,
-  });
-  ElMessage.success("已提交");
-  applyVisible.value = false;
-  await load();
+  if (!apply.reason.trim()) {
+    toast.add({ title: "请输入请假原因", color: "warning" });
+    return;
+  }
+  submitting.value = true;
+  try {
+    await http.post("/leaves", {
+      leaveType: apply.leaveType,
+      startTime: new Date(apply.start).toISOString(),
+      endTime: new Date(apply.end).toISOString(),
+      reason: apply.reason,
+    });
+    toast.add({ title: "已提交", color: "success" });
+    applyVisible.value = false;
+    apply.reason = "";
+    await load();
+  } finally {
+    submitting.value = false;
+  }
 }
 
 onMounted(load);
 </script>
 
 <style scoped>
-.page-field {
-  min-width: 220px;
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.page-field--wide {
+.status-switch {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbar-input {
   width: 320px;
 }
 
-.page-pager {
+.table-wrap {
+  overflow: hidden;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
+.pager {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.pager-total {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.size-select {
+  width: 120px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-block-full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #264334;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #7b8a83;
+}
+
+.time-input :deep(input) {
+  min-height: 44px;
+}
+
+.modal-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 18px;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-input {
+    width: 100%;
+  }
+
+  .pager {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

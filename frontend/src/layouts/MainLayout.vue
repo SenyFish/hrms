@@ -1,88 +1,73 @@
 <template>
-  <div class="shell">
-    <aside class="shell__aside">
-      <div class="shell__brand">
-        <div class="shell__brand-badge">
-          <img src="/favicon.svg" alt="HRMS" class="shell__brand-icon" />
+  <div class="layout-shell">
+    <aside class="sidebar hr-shell-surface">
+      <div class="brand-box">
+        <div class="brand-mark">
+          <img src="/favicon.svg" alt="系统图标" class="brand-icon" />
         </div>
-        <div>
-          <strong class="shell__brand-title">HRMS Console</strong>
-          <p class="shell__brand-copy">Frappe-style workspace for the current Spring backend</p>
+        <div class="brand-copy">
+          <strong>人力资源管理系统</strong>
+          <span>Nuxt UI Admin Workspace</span>
         </div>
       </div>
 
-      <div class="shell__nav-copy">
-        <p class="shell__nav-kicker">{{ currentMeta.sectionEn }}</p>
-        <h2>{{ currentMeta.section }}</h2>
-        <p>{{ currentMeta.description }}</p>
-      </div>
+      <div class="menu-stack">
+        <section v-for="menu in topMenus" :key="menu.id" class="menu-section">
+          <div v-if="childrenOf(menu.id).length" class="menu-group-title">
+            <span>{{ menuLabel(menu.title, menu.path) }}</span>
+            <UBadge color="neutral" variant="soft" size="sm">{{ childrenOf(menu.id).length }}</UBadge>
+          </div>
 
-      <nav class="shell__nav">
-        <section v-for="group in menuGroups" :key="group.id" class="shell__nav-group">
-          <header class="shell__nav-group-title">
-            <component :is="iconMap(group.icon)" />
-            <span>{{ group.title }}</span>
-          </header>
-          <router-link
-            v-for="item in group.children"
-            :key="item.id"
-            :to="item.path"
-            class="shell__nav-link"
-            :class="{ 'is-active': route.path === item.path }"
-          >
-            <span>{{ item.title }}</span>
-            <small>{{ shortPath(item.path) }}</small>
-          </router-link>
-          <router-link
-            v-if="!group.children.length && group.path"
-            :to="group.path"
-            class="shell__nav-link"
-            :class="{ 'is-active': route.path === group.path }"
-          >
-            <span>{{ group.title }}</span>
-            <small>{{ shortPath(group.path) }}</small>
-          </router-link>
+          <div class="menu-items">
+            <button
+              v-if="!childrenOf(menu.id).length"
+              type="button"
+              class="menu-link"
+              :class="{ active: route.path === menu.path }"
+              @click="router.push(menu.path)"
+            >
+              <UIcon :name="iconMap(menu.icon)" class="menu-icon" />
+              <span>{{ menuLabel(menu.title, menu.path) }}</span>
+            </button>
+
+            <button
+              v-for="child in childrenOf(menu.id)"
+              :key="child.id"
+              type="button"
+              class="menu-link"
+              :class="{ active: route.path === child.path }"
+              @click="router.push(child.path)"
+            >
+              <UIcon :name="iconMap(child.icon)" class="menu-icon" />
+              <span>{{ menuLabel(child.title, child.path) }}</span>
+            </button>
+          </div>
         </section>
-      </nav>
+      </div>
     </aside>
 
-    <main class="shell__content">
-      <header class="shell__topbar">
-        <div class="shell__topbar-copy">
-          <p class="shell__topbar-kicker">{{ currentMeta.section }} / {{ currentMeta.sectionEn }}</p>
-          <h1>{{ pageTitle }}</h1>
+    <main class="workspace">
+      <header class="workspace-header hr-shell-surface">
+        <div>
+          <p class="workspace-kicker">组织运营中台</p>
+          <h1 class="workspace-title">{{ pageTitle }}</h1>
         </div>
 
-        <div class="shell__topbar-actions">
-          <div class="shell__identity">
-            <span class="shell__identity-label">当前用户</span>
-            <strong>{{ displayName }}</strong>
+        <div class="workspace-actions">
+          <div class="user-panel">
+            <UAvatar size="lg" :text="displayInitial" class="user-avatar" />
+            <div>
+              <div class="user-name">{{ displayName }}</div>
+              <div class="user-role">{{ displayRole }}</div>
+            </div>
           </div>
-          <button class="frappe-button" data-variant="outline" type="button" @click="logout">退出登录</button>
+          <UButton color="primary" variant="solid" icon="i-lucide-log-out" @click="logout">退出登录</UButton>
         </div>
       </header>
 
-      <section class="app-page">
-        <div class="page-hero" :class="accentClass">
-          <div class="page-hero__content">
-            <p class="page-hero__eyebrow">{{ currentMeta.section }} / {{ currentMeta.sectionEn }}</p>
-            <h2 class="page-hero__title">{{ pageTitle }}</h2>
-            <p class="page-hero__description">{{ currentMeta.description }}</p>
-          </div>
-          <div class="page-hero__metrics">
-            <div class="page-pill">
-              <span class="page-pill__label">Route</span>
-              <span class="page-pill__value">{{ route.path }}</span>
-            </div>
-            <div class="page-pill">
-              <span class="page-pill__label">Role</span>
-              <span class="page-pill__value">{{ displayRole }}</span>
-            </div>
-          </div>
-        </div>
-
+      <div class="workspace-body">
         <router-view />
-      </section>
+      </div>
     </main>
   </div>
 </template>
@@ -91,98 +76,62 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import http from "@/api/http";
-import { useUserStore, type MenuItem } from "@/stores/user";
-import { accentClassMap, menuMeta } from "@/config/navigation";
-import {
-  Avatar,
-  Calendar,
-  Clock,
-  Collection,
-  DataAnalysis,
-  Document,
-  Files,
-  HomeFilled,
-  Location,
-  Lock,
-  Money,
-  OfficeBuilding,
-  Setting,
-  User,
-} from "@element-plus/icons-vue";
-
-type MenuNode = MenuItem & {
-  sortOrder?: number;
-  children: MenuItem[];
-};
+import { useUserStore } from "@/stores/user";
 
 const route = useRoute();
 const router = useRouter();
 const store = useUserStore();
 
 const menus = computed(() => store.menus || []);
+const topMenus = computed(() => menus.value.filter((m) => m.parentId == null || m.parentId === 0));
 
-const menuGroups = computed<MenuNode[]>(() => {
-  const roots = menus.value
-    .filter((item) => item.parentId == null || item.parentId === 0)
-    .sort((a, b) => ((a as MenuNode).sortOrder || 0) - ((b as MenuNode).sortOrder || 0));
-
-  return roots.map((root) => ({
-    ...(root as MenuNode),
-    children: menus.value
-      .filter((item) => item.parentId === root.id)
-      .sort((a, b) => ((a as MenuNode).sortOrder || 0) - ((b as MenuNode).sortOrder || 0)),
-  }));
-});
-
-function iconMap(name?: string) {
-  const map: Record<string, unknown> = {
-    HomeFilled,
-    Setting,
-    Lock,
-    Money,
-    Clock,
-    Files,
-    User,
-    OfficeBuilding,
-    Avatar,
-    Collection,
-    Document,
-    Location,
-    Calendar,
-    DataAnalysis,
-  };
-  return map[name || ""] || HomeFilled;
+function childrenOf(pid: number) {
+  return menus.value.filter((item) => item.parentId === pid).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
 
-const currentMeta = computed(() => {
-  return (
-    menuMeta[route.path] || {
-      section: "工作台",
-      sectionEn: "Workspace",
-      description: "在统一壳层内继续处理当前业务流程。",
-      accent: "overview",
-    }
-  );
-});
+function iconMap(name?: string) {
+  const map: Record<string, string> = {
+    HomeFilled: "i-lucide-house",
+    Setting: "i-lucide-settings-2",
+    Lock: "i-lucide-shield-check",
+    Money: "i-lucide-wallet",
+    Clock: "i-lucide-clock-3",
+    Folder: "i-lucide-folder-kanban",
+    User: "i-lucide-users",
+    OfficeBuilding: "i-lucide-building-2",
+    Avatar: "i-lucide-user-round-check",
+    Menu: "i-lucide-panels-top-left",
+    Document: "i-lucide-file-text",
+    Location: "i-lucide-map-pinned",
+    Calendar: "i-lucide-calendar-range",
+    List: "i-lucide-list-todo",
+    DataAnalysis: "i-lucide-chart-column-big",
+  };
+  return map[name || ""] || "i-lucide-square-chart-gantt";
+}
 
 const pageTitle = computed(() => {
-  const menu = menus.value.find((item) => item.path === route.path);
-  return menu?.title || "首页";
+  const current = menus.value.find((item) => item.path === route.path);
+  return current?.title || "首页";
 });
 
-const accentClass = computed(() => accentClassMap[currentMeta.value.accent] || accentClassMap.overview);
-const displayName = computed(() => (store.profile?.realName as string) || (store.profile?.username as string) || "未知用户");
-const displayRole = computed(() => (store.profile?.roleName as string) || (store.profile?.roleCode as string) || "未分配");
+const displayName = computed(() => String(store.profile?.realName || store.profile?.username || ""));
+const displayRole = computed(() => String(store.profile?.roleName || store.profile?.roleCode || ""));
+const displayInitial = computed(() => displayName.value.slice(0, 1) || "H");
 
-function shortPath(path: string) {
-  return path.replace(/^\//, "");
+function menuLabel(title: string, path: string) {
+  const roleCode = String(store.profile?.roleCode || "");
+  if (roleCode === "EMP" && path === "/relations/contracts") {
+    return "我的合同";
+  }
+  return title;
 }
 
 async function logout() {
   try {
     await http.post("/auth/logout");
   } catch {
-    // ignore logout failure and clear local session anyway
+    /* ignore */
   }
   store.clear();
   router.push("/login");
@@ -190,232 +139,201 @@ async function logout() {
 </script>
 
 <style scoped>
-.shell {
+.layout-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-}
-
-.shell__aside {
-  position: sticky;
-  top: 0;
-  min-height: 100vh;
-  padding: 24px 20px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
   background:
-    radial-gradient(circle at top right, rgba(203, 173, 103, 0.18), transparent 22%),
-    linear-gradient(180deg, rgba(18, 54, 41, 0.98) 0%, rgba(23, 58, 46, 0.98) 100%);
-  color: #f6f2e8;
+    radial-gradient(circle at top left, rgba(215, 194, 139, 0.22), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(135, 191, 163, 0.22), transparent 26%),
+    linear-gradient(180deg, #edf3ee 0%, #e4ece6 100%);
 }
 
-.shell__aside::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 30px 30px;
-  opacity: 0.34;
-  pointer-events: none;
+.sidebar {
+  border-radius: 28px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 27, 0.94) 0%, rgba(27, 67, 50, 0.96) 100%),
+    rgba(10, 18, 27, 0.78);
+  color: #f8f4ec;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 36px);
 }
 
-.shell__brand,
-.shell__nav-copy,
-.shell__nav {
-  position: relative;
-  z-index: 1;
-}
-
-.shell__brand {
+.brand-box {
   display: flex;
   align-items: center;
   gap: 14px;
+  padding: 8px 8px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.shell__brand-badge {
+.brand-mark {
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #cbad67 0%, #f4e7c5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, rgba(215, 194, 139, 0.98), rgba(150, 194, 166, 0.96));
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
 }
 
-.shell__brand-icon {
+.brand-icon {
   width: 34px;
   height: 34px;
 }
 
-.shell__brand-title {
+.brand-copy strong,
+.brand-copy span {
   display: block;
-  font-size: 18px;
 }
 
-.shell__brand-copy {
-  margin: 4px 0 0;
-  color: rgba(246, 242, 232, 0.64);
-  line-height: 1.5;
+.brand-copy strong {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.brand-copy span {
+  margin-top: 4px;
+  color: rgba(248, 244, 236, 0.62);
   font-size: 12px;
 }
 
-.shell__nav-copy {
-  margin-top: 26px;
-  padding: 18px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
+.menu-stack {
+  margin-top: 18px;
+  display: grid;
+  gap: 16px;
 }
 
-.shell__nav-kicker {
-  margin: 0 0 6px;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(246, 242, 232, 0.56);
+.menu-section {
+  display: grid;
+  gap: 10px;
 }
 
-.shell__nav-copy h2 {
-  margin: 0;
-  font-size: 24px;
-}
-
-.shell__nav-copy p:last-child {
-  margin: 10px 0 0;
-  color: rgba(246, 242, 232, 0.68);
-  line-height: 1.7;
-}
-
-.shell__nav {
-  margin-top: 20px;
+.menu-group-title {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(248, 244, 236, 0.6);
 }
 
-.shell__nav-group {
-  padding: 14px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+.menu-items {
+  display: grid;
+  gap: 8px;
 }
 
-.shell__nav-group-title {
+.menu-link {
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
-  color: rgba(246, 242, 232, 0.72);
-  font-size: 13px;
+  padding: 12px 14px;
+  color: rgba(248, 244, 236, 0.8);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
 }
 
-.shell__nav-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  color: rgba(246, 242, 232, 0.76);
-  text-decoration: none;
-  transition:
-    background 0.18s ease,
-    transform 0.18s ease;
+.menu-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
-.shell__nav-link small {
-  color: rgba(246, 242, 232, 0.38);
+.menu-link.active {
+  background: linear-gradient(135deg, rgba(215, 194, 139, 0.3), rgba(135, 191, 163, 0.26));
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-.shell__nav-link:hover,
-.shell__nav-link.is-active {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateX(2px);
+.menu-icon {
+  width: 18px;
+  height: 18px;
 }
 
-.shell__nav-link.is-active {
-  color: #fff8ea;
-}
-
-.shell__content {
+.workspace {
   min-width: 0;
-  padding: 24px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
 }
 
-.shell__topbar {
+.workspace-header {
+  min-height: 88px;
+  padding: 18px 22px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
 }
 
-.shell__topbar-kicker {
-  margin: 0 0 8px;
-  color: #6b7d73;
+.workspace-kicker {
+  margin: 0 0 6px;
   font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #527164;
 }
 
-.shell__topbar h1 {
+.workspace-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 30px;
+  line-height: 1.1;
+  color: #13231a;
 }
 
-.shell__topbar-actions {
+.workspace-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.shell__identity {
-  min-width: 160px;
-  padding: 12px 16px;
+.user-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.64);
-  border: 1px solid rgba(24, 49, 38, 0.08);
-  box-shadow: var(--hr-shadow-soft);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(27, 67, 50, 0.08);
 }
 
-.shell__identity-label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--hr-text-soft);
+.user-name {
+  font-weight: 700;
+  color: #13231a;
+}
+
+.user-role {
+  margin-top: 2px;
   font-size: 12px;
+  color: #6b7280;
 }
 
-@media (max-width: 1120px) {
-  .shell {
+.workspace-body {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .layout-shell {
     grid-template-columns: 1fr;
   }
 
-  .shell__aside {
-    position: relative;
+  .sidebar {
     min-height: auto;
   }
-}
 
-@media (max-width: 768px) {
-  .shell__content {
-    padding: 16px;
-  }
-
-  .shell__topbar {
+  .workspace-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .shell__topbar-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .shell__identity {
-    min-width: 0;
-    flex: 1;
+    gap: 14px;
   }
 }
 </style>
