@@ -133,6 +133,7 @@ import type { TableColumn } from "@nuxt/ui";
 import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
+import type { UserProfile } from "@/types/auth";
 
 use([LineChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
@@ -160,7 +161,7 @@ const store = useUserStore();
 const toast = useToast();
 const summary = ref<Record<string, number> | null>(null);
 const chartRef = ref<HTMLElement | null>(null);
-const profile = computed(() => store.profile as Record<string, string> | null);
+const profile = computed(() => store.profile as UserProfile | null);
 const roleCode = computed(() => String(store.profile?.roleCode || ""));
 const canViewCare = computed(() => roleCode.value === "ADMIN" || roleCode.value === "HR");
 const careReminders = ref<CareReminder[]>([]);

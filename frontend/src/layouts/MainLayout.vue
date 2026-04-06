@@ -77,16 +77,41 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
+import type { MenuItem } from "@/types/auth";
 
 const route = useRoute();
 const router = useRouter();
 const store = useUserStore();
 
 const menus = computed(() => store.menus || []);
-const topMenus = computed(() => menus.value.filter((m) => m.parentId == null || m.parentId === 0));
+const childMenuMap = computed(() => {
+  const groups = new Map<number, MenuItem[]>();
+
+  for (const menu of menus.value) {
+    const parentId = menu.parentId;
+    if (parentId == null || parentId === 0) {
+      continue;
+    }
+
+    const siblings = groups.get(parentId) || [];
+    siblings.push(menu);
+    groups.set(parentId, siblings);
+  }
+
+  for (const siblings of groups.values()) {
+    siblings.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  }
+
+  return groups;
+});
+const topMenus = computed(() =>
+  menus.value
+    .filter((menu) => menu.parentId == null || menu.parentId === 0)
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+);
 
 function childrenOf(pid: number) {
-  return menus.value.filter((item) => item.parentId === pid).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  return childMenuMap.value.get(pid) || [];
 }
 
 function iconMap(name?: string) {
