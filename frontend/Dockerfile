@@ -1,4 +1,4 @@
-FROM docker.1ms.run/node:20-alpine AS build
+FROM docker.1ms.run/node:24-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
