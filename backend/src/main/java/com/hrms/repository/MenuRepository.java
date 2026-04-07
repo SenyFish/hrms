@@ -9,5 +9,9 @@ import java.util.Optional;
 public interface MenuRepository extends JpaRepository<Menu, Long> {
     List<Menu> findAllByOrderBySortOrderAsc();
 
-    Optional<Menu> findByPath(String path);
+    List<Menu> findAllByPathOrderByIdAsc(String path);
+
+    default Optional<Menu> findByPath(String path) {
+        return findAllByPathOrderByIdAsc(path).stream().findFirst();
+    }
 }
