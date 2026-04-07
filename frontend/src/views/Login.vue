@@ -56,25 +56,31 @@
 
         <form class="login-form" @submit.prevent="onSubmit">
           <div class="field-block">
-            <label class="field-label">用户名</label>
+            <label class="field-label" for="login-username">用户名</label>
             <UInput
               v-model="form.username"
+              id="login-username"
+              name="username"
               size="xl"
               variant="subtle"
               placeholder="请输入用户名"
               icon="i-lucide-user-round"
+              autocomplete="username"
             />
           </div>
 
           <div class="field-block">
-            <label class="field-label">密码</label>
+            <label class="field-label" for="login-password">密码</label>
             <UInput
               v-model="form.password"
+              id="login-password"
+              name="password"
               :type="showPassword ? 'text' : 'password'"
               size="xl"
               variant="subtle"
               placeholder="请输入密码"
               icon="i-lucide-lock-keyhole"
+              autocomplete="current-password"
             >
               <template #trailing>
                 <UButton
