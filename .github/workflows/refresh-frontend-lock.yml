@@ -1,6 +1,11 @@
 name: Refresh Frontend Lockfile
 
 on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/refresh-frontend-lock.yml'
   workflow_dispatch:
 
 permissions:
