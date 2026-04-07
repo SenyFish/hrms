@@ -4,33 +4,38 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "finance_expense")
-public class FinanceExpense {
+@Table(name = "training_session")
+public class TrainingSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 32)
-    private String serialNo;
+    @Column(nullable = false, length = 120)
+    private String title;
 
-    @Column(nullable = false, length = 500)
-    private String description;
-
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal amount;
-
-    @Column(nullable = false)
-    private LocalDateTime expenseTime;
+    @Column(length = 120)
+    private String trainerName;
 
     private Long departmentId;
+
+    @Transient
+    private String departmentName;
+
+    @Column(nullable = false)
+    private LocalDateTime trainingTime;
+
+    @Column(nullable = false, length = 30)
+    private String status;
+
+    @Column(length = 500)
+    private String content;
 
     private Instant createdAt;
 

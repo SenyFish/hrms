@@ -73,6 +73,11 @@ public class RecruitmentCandidate {
     @Column(length = 2000)
     private String resumeRemark;
 
+    private Long resumeFileId;
+
+    @Column(length = 255)
+    private String resumeFileName;
+
     @Column(length = 1000)
     private String remark;
 

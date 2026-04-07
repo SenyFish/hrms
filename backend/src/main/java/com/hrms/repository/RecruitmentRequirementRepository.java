@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface RecruitmentRequirementRepository extends JpaRepository<RecruitmentRequirement, Long>, JpaSpecificationExecutor<RecruitmentRequirement> {
     Optional<RecruitmentRequirement> findTopByOrderByIdDesc();
+
+    void deleteByApplicantUserId(Long applicantUserId);
 }

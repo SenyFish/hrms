@@ -59,6 +59,15 @@ public class SalaryController {
         return ApiResponse.ok(salaryRecordRepository.findByUser_IdOrderBySalaryMonthDesc(loginUser.getUserId()));
     }
 
+    @GetMapping("/records/{id}")
+    public ApiResponse<SalaryRecord> detail(@PathVariable Long id,
+                                            @AuthenticationPrincipal LoginUser loginUser) {
+        SalaryRecord record = salaryRecordRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("工资记录不存在"));
+        assertCanViewRecord(loginUser, record);
+        return ApiResponse.ok(record);
+    }
+
     @PostMapping("/records")
     @Transactional
     public ApiResponse<SalaryRecord> save(@RequestBody SalarySave body,
@@ -109,6 +118,30 @@ public class SalaryController {
         return ApiResponse.ok();
     }
 
+    @GetMapping("/records/{id}/payslip")
+    public ResponseEntity<byte[]> payslip(@PathVariable Long id,
+                                          @AuthenticationPrincipal LoginUser loginUser) {
+        SalaryRecord record = salaryRecordRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("工资记录不存在"));
+        assertCanViewRecord(loginUser, record);
+
+        byte[] bytes = ExcelExportUtil.salaryPayslip(record);
+        String employeeNo = record.getUser() != null && record.getUser().getEmployeeNo() != null
+                ? record.getUser().getEmployeeNo()
+                : "employee";
+        String month = record.getSalaryMonth() != null ? record.getSalaryMonth() : "salary";
+        String filename = "payslip-" + employeeNo + "-" + month + ".xlsx";
+        String contentDisposition = "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + filename;
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .header(HttpHeaders.CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset="
+                                + StandardCharsets.UTF_8.name())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(bytes);
+    }
+
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(@RequestParam String month,
                                          @AuthenticationPrincipal LoginUser loginUser) {
@@ -127,6 +160,19 @@ public class SalaryController {
                                 + StandardCharsets.UTF_8.name())
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(bytes);
+    }
+
+    private void assertCanViewRecord(LoginUser loginUser, SalaryRecord record) {
+        if (loginUser == null) {
+            throw new AccessDeniedException("未登录");
+        }
+        if (isAdmin(loginUser) || isHr(loginUser)) {
+            return;
+        }
+        Long ownerId = record.getUser() != null ? record.getUser().getId() : null;
+        if (ownerId == null || !ownerId.equals(loginUser.getUserId())) {
+            throw new AccessDeniedException("无权限查看该工资记录");
+        }
     }
 
     private void ensureNoDuplicate(SalarySave body, Long userId) {

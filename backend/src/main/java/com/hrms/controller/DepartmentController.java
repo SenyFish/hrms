@@ -20,47 +20,46 @@ public class DepartmentController {
 
     @GetMapping
     public ApiResponse<List<Department>> list(@AuthenticationPrincipal LoginUser loginUser) {
-        assertAdminOrHr(loginUser);
+        if (loginUser == null) {
+            throw new AccessDeniedException("未登录");
+        }
         return ApiResponse.ok(departmentRepository.findAll());
     }
 
     @PostMapping
-    public ApiResponse<Department> create(@RequestBody Department d, @AuthenticationPrincipal LoginUser loginUser) {
-        assertAdmin(loginUser);
-        return ApiResponse.ok(departmentRepository.save(d));
+    public ApiResponse<Department> create(@RequestBody Department department,
+                                          @AuthenticationPrincipal LoginUser loginUser) {
+        assertAdminOrHr(loginUser);
+        return ApiResponse.ok(departmentRepository.save(department));
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Department> update(@PathVariable Long id, @RequestBody Department d,
-                                        @AuthenticationPrincipal LoginUser loginUser) {
-        assertAdmin(loginUser);
-        d.setId(id);
-        return ApiResponse.ok(departmentRepository.save(d));
+    public ApiResponse<Department> update(@PathVariable Long id,
+                                          @RequestBody Department department,
+                                          @AuthenticationPrincipal LoginUser loginUser) {
+        assertAdminOrHr(loginUser);
+        department.setId(id);
+        return ApiResponse.ok(departmentRepository.save(department));
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
-        assertAdmin(loginUser);
+    public ApiResponse<Void> delete(@PathVariable Long id,
+                                    @AuthenticationPrincipal LoginUser loginUser) {
+        assertAdminOrHr(loginUser);
         departmentRepository.deleteById(id);
         return ApiResponse.ok();
     }
 
-    private static boolean isAdmin(LoginUser u) {
-        return u != null && "ADMIN".equals(u.getRoleCode());
+    private static boolean isAdmin(LoginUser user) {
+        return user != null && "ADMIN".equals(user.getRoleCode());
     }
 
-    private static boolean isHr(LoginUser u) {
-        return u != null && "HR".equals(u.getRoleCode());
+    private static boolean isHr(LoginUser user) {
+        return user != null && "HR".equals(user.getRoleCode());
     }
 
-    private static void assertAdmin(LoginUser u) {
-        if (!isAdmin(u)) {
-            throw new AccessDeniedException("需要管理员权限");
-        }
-    }
-
-    private static void assertAdminOrHr(LoginUser u) {
-        if (!isAdmin(u) && !isHr(u)) {
+    private static void assertAdminOrHr(LoginUser user) {
+        if (!isAdmin(user) && !isHr(user)) {
             throw new AccessDeniedException("需要管理员或人事权限");
         }
     }

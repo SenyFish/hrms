@@ -14,4 +14,6 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     List<AttendanceRecord> findByUser_IdAndAttDateBetweenOrderByAttDateAsc(Long userId, LocalDate from, LocalDate to);
 
     List<AttendanceRecord> findByAttDateBetweenOrderByAttDateAsc(LocalDate from, LocalDate to);
+
+    void deleteByUser_Id(Long userId);
 }

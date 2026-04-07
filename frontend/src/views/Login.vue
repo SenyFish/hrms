@@ -1,71 +1,103 @@
 <template>
   <div class="login-page">
-    <div class="bg-curtain curtain-a"></div>
-    <div class="bg-curtain curtain-b"></div>
-    <div class="bg-curtain curtain-c"></div>
-    <div class="bg-aurora aurora-a"></div>
-    <div class="bg-aurora aurora-b"></div>
-    <div class="bg-grid"></div>
-    <div class="bg-wave wave-a"></div>
-    <div class="bg-wave wave-b"></div>
-    <div class="bg-orb orb-a"></div>
-    <div class="bg-orb orb-b"></div>
+    <div class="curtain curtain-a"></div>
+    <div class="curtain curtain-b"></div>
+    <div class="curtain curtain-c"></div>
+    <div class="halo halo-a"></div>
+    <div class="halo halo-b"></div>
+    <div class="grid-overlay"></div>
 
     <div class="login-shell">
       <section class="brand-panel">
-        <div class="brand-hero">
-          <div class="brand-glow glow-a"></div>
-          <div class="brand-glow glow-b"></div>
-          <div class="brand-badge" aria-label="系统图标">
-            <img src="/favicon.svg" alt="系统图标" class="brand-badge-icon" />
+        <div class="hero-mark">
+          <div class="hero-ring"></div>
+          <div class="hero-badge">
+            <img src="/favicon.svg" alt="系统图标" class="hero-icon" />
           </div>
         </div>
 
+        <UBadge color="primary" variant="soft" class="brand-tag">HRMS 一体化工作台</UBadge>
         <h1>人力资源管理系统</h1>
         <p class="brand-copy">
-          统一覆盖组织人事、考勤薪资、财务资产、招聘协同与员工关怀场景，让日常管理、审批流转与经营数据更清晰。
+          覆盖组织人事、薪资社保、考勤审批、招聘内推、员工关系、培训发展与员工关怀，
+          为管理员、人事和员工提供统一入口与在线协同能力。
         </p>
 
-        <div class="brand-cards">
-          <div class="info-card">
-            <span class="info-label">组织人事</span>
-            <strong>集中管理员工档案、部门岗位、权限菜单与城市参保规则</strong>
-          </div>
-          <div class="info-card">
-            <span class="info-label">业务协同</span>
-            <strong>联动考勤打卡、请假审批、资产申请、资产审核与月报导出</strong>
-          </div>
-          <div class="info-card">
-            <span class="info-label">经营支持</span>
-            <strong>打通薪资社保、财务支出、招聘内推和员工关怀计划数据</strong>
-          </div>
+        <div class="brand-grid">
+          <UCard variant="soft" class="feature-card">
+            <template #header>
+              <span class="feature-label">组织与人员</span>
+            </template>
+            支持员工档案、部门岗位、角色权限、合同资料、个人信息维护等核心人事管理场景。
+          </UCard>
+          <UCard variant="soft" class="feature-card">
+            <template #header>
+              <span class="feature-label">流程与协同</span>
+            </template>
+            统一处理请假、出差、资产申请、内推、纠纷申请、审批待办和首页业务提醒。
+          </UCard>
+          <UCard variant="soft" class="feature-card">
+            <template #header>
+              <span class="feature-label">经营与发展</span>
+            </template>
+            提供工资明细、月报导出、绩效考核、培训组织、晋升规划和关怀计划等持续运营能力。
+          </UCard>
         </div>
       </section>
 
-      <el-card class="login-card" shadow="always">
-        <div class="card-head">
-          <p class="card-kicker">账号登录</p>
-          <h2>欢迎进入系统</h2>
-          <p class="card-copy">请输入账号信息，继续访问人力资源管理平台</p>
-        </div>
+      <UCard variant="soft" class="login-card">
+        <template #header>
+          <div class="card-head">
+            <p class="card-kicker">账号登录</p>
+            <h2>进入业务工作台</h2>
+            <span>输入用户名和密码后继续访问系统。</span>
+          </div>
+        </template>
 
-        <el-form :model="form" class="login-form" @submit.prevent="onSubmit">
-          <el-form-item>
-            <el-input v-model="form.username" placeholder="用户名" size="large" prefix-icon="User" />
-          </el-form-item>
-          <el-form-item>
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="密码"
-              size="large"
-              show-password
-              prefix-icon="Lock"
+        <form class="login-form" @submit.prevent="onSubmit">
+          <div class="field-block">
+            <label class="field-label" for="login-username">用户名</label>
+            <UInput
+              v-model="form.username"
+              id="login-username"
+              name="username"
+              size="xl"
+              variant="subtle"
+              placeholder="请输入用户名"
+              icon="i-lucide-user-round"
+              autocomplete="username"
             />
-          </el-form-item>
-          <el-button type="primary" class="submit-btn" native-type="submit" :loading="loading">登录</el-button>
-        </el-form>
-      </el-card>
+          </div>
+
+          <div class="field-block">
+            <label class="field-label" for="login-password">密码</label>
+            <UInput
+              v-model="form.password"
+              id="login-password"
+              name="password"
+              :type="showPassword ? 'text' : 'password'"
+              size="xl"
+              variant="subtle"
+              placeholder="请输入密码"
+              icon="i-lucide-lock-keyhole"
+              autocomplete="current-password"
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                  @click.prevent="showPassword = !showPassword"
+                />
+              </template>
+            </UInput>
+          </div>
+
+          <UButton type="submit" size="xl" block color="primary" variant="solid" :loading="loading" class="submit-btn">
+            登录系统
+          </UButton>
+        </form>
+      </UCard>
     </div>
   </div>
 </template>
@@ -73,13 +105,15 @@
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 import { useUserStore } from "@/stores/user";
-import { ElMessage } from "element-plus";
 
 const router = useRouter();
 const store = useUserStore();
+const toast = useToast();
 const loading = ref(false);
+const showPassword = ref(false);
 const form = reactive({ username: "", password: "" });
 
 async function onSubmit() {
@@ -88,10 +122,13 @@ async function onSubmit() {
     const data = (await http.post("/auth/login", form)) as { token: string };
     store.setToken(data.token);
     await store.fetchProfile();
-    ElMessage.success("登录成功");
+    toast.add({ title: "登录成功", color: "success" });
     router.push("/home");
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : "登录失败");
+    toast.add({
+      title: error instanceof Error ? error.message : "登录失败",
+      color: "error",
+    });
   } finally {
     loading.value = false;
   }
@@ -100,338 +137,198 @@ async function onSubmit() {
 
 <style scoped>
 .login-page {
-  --bg-deep: #0f1720;
-  --bg-mid: #1b4332;
-  --brand-accent: #87bfa3;
-  --brand-gold: #d7c28b;
-  --text-main: #f6f3ea;
-  --text-soft: rgba(246, 243, 234, 0.76);
-  --card-border: rgba(255, 255, 255, 0.18);
   min-height: 100vh;
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(215, 194, 139, 0.22), transparent 28%),
-    linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-mid) 52%, #f3efe5 160%);
-  isolation: isolate;
+    radial-gradient(circle at top left, rgba(215, 194, 139, 0.22), transparent 24%),
+    radial-gradient(circle at 80% 18%, rgba(135, 191, 163, 0.28), transparent 22%),
+    linear-gradient(135deg, #09131c 0%, #123024 48%, #eef2eb 150%);
 }
 
-.bg-curtain {
-  position: absolute;
-  inset: auto;
+.curtain,
+.halo,
+.grid-overlay {
   pointer-events: none;
-  border-radius: 50%;
-  filter: blur(56px);
-  opacity: 0.52;
+  position: absolute;
+}
+
+.curtain {
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.48;
   mix-blend-mode: screen;
-  will-change: transform, opacity;
 }
 
 .curtain-a {
-  width: 92vw;
-  height: 84vh;
-  left: -26vw;
-  top: -18vh;
-  background:
-    radial-gradient(
-      ellipse at 34% 42%,
-      rgba(215, 194, 139, 0.34) 0%,
-      rgba(215, 194, 139, 0.18) 24%,
-      rgba(215, 194, 139, 0.08) 42%,
-      rgba(215, 194, 139, 0) 74%
-    );
-  animation: curtainFlowA 32s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  width: 76vw;
+  height: 78vh;
+  top: -20vh;
+  left: -18vw;
+  background: radial-gradient(circle, rgba(215, 194, 139, 0.3) 0%, rgba(215, 194, 139, 0) 72%);
+  animation: driftA 22s ease-in-out infinite;
 }
 
 .curtain-b {
-  width: 96vw;
-  height: 86vh;
-  right: -28vw;
-  top: 2vh;
-  background:
-    radial-gradient(
-      ellipse at 58% 48%,
-      rgba(135, 191, 163, 0.3) 0%,
-      rgba(135, 191, 163, 0.16) 28%,
-      rgba(135, 191, 163, 0.08) 46%,
-      rgba(135, 191, 163, 0) 76%
-    );
-  animation: curtainFlowB 36s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  width: 68vw;
+  height: 72vh;
+  top: -8vh;
+  right: -20vw;
+  background: radial-gradient(circle, rgba(135, 191, 163, 0.24) 0%, rgba(135, 191, 163, 0) 74%);
+  animation: driftB 26s ease-in-out infinite;
 }
 
 .curtain-c {
   width: 88vw;
-  height: 76vh;
-  left: 10vw;
-  bottom: -26vh;
-  background:
-    radial-gradient(
-      ellipse at 50% 50%,
-      rgba(246, 243, 234, 0.2) 0%,
-      rgba(246, 243, 234, 0.1) 26%,
-      rgba(246, 243, 234, 0.04) 44%,
-      rgba(246, 243, 234, 0) 78%
-    );
-  animation: curtainFlowC 40s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  height: 74vh;
+  bottom: -30vh;
+  left: 12vw;
+  background: radial-gradient(circle, rgba(248, 244, 236, 0.16) 0%, rgba(248, 244, 236, 0) 76%);
+  animation: driftC 28s ease-in-out infinite;
 }
 
-.bg-aurora {
-  position: absolute;
-  inset: auto;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0.18;
-  filter: blur(42px);
+.halo {
+  border-radius: 999px;
+  filter: blur(18px);
+  opacity: 0.52;
 }
 
-.aurora-a {
-  width: 72vw;
-  height: 42vh;
-  top: -10%;
-  left: -12%;
-  background:
-    linear-gradient(
-      120deg,
-      rgba(215, 194, 139, 0) 0%,
-      rgba(215, 194, 139, 0.22) 28%,
-      rgba(135, 191, 163, 0.18) 56%,
-      rgba(215, 194, 139, 0) 100%
-    );
-  transform: rotate(-10deg);
-  animation: auroraSweepA 24s ease-in-out infinite;
+.halo-a {
+  width: 320px;
+  height: 320px;
+  right: 14%;
+  top: 6%;
+  background: rgba(135, 191, 163, 0.16);
 }
 
-.aurora-b {
-  width: 68vw;
-  height: 38vh;
-  right: -18%;
-  bottom: -8%;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(135, 191, 163, 0) 0%,
-      rgba(135, 191, 163, 0.22) 34%,
-      rgba(246, 243, 234, 0.12) 62%,
-      rgba(135, 191, 163, 0) 100%
-    );
-  transform: rotate(12deg);
-  animation: auroraSweepB 28s ease-in-out infinite;
+.halo-b {
+  width: 280px;
+  height: 280px;
+  left: -80px;
+  bottom: 10%;
+  background: rgba(215, 194, 139, 0.16);
 }
 
-.bg-grid {
-  position: absolute;
+.grid-overlay {
   inset: 0;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 36px 36px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 85%);
-  animation: gridFloat 28s linear infinite;
-  opacity: 0.72;
-}
-
-.bg-wave {
-  position: absolute;
-  inset: auto;
-  border-radius: 999px;
-  filter: blur(44px);
-  opacity: 0.26;
-  pointer-events: none;
-}
-
-.wave-a {
-  width: 720px;
-  height: 720px;
-  top: -240px;
-  left: 8%;
-  background: radial-gradient(circle, rgba(215, 194, 139, 0.2) 0%, rgba(215, 194, 139, 0) 68%);
-  animation: waveDriftA 26s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-
-.wave-b {
-  width: 680px;
-  height: 680px;
-  right: -180px;
-  bottom: -220px;
-  background: radial-gradient(circle, rgba(135, 191, 163, 0.2) 0%, rgba(135, 191, 163, 0) 70%);
-  animation: waveDriftB 30s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-
-.bg-orb {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(14px);
-  opacity: 0.7;
-  will-change: transform;
-}
-
-.orb-a {
-  width: 320px;
-  height: 320px;
-  top: -80px;
-  right: 12%;
-  background: rgba(135, 191, 163, 0.22);
-  animation: orbFloatA 12s ease-in-out infinite;
-}
-
-.orb-b {
-  width: 280px;
-  height: 280px;
-  left: -90px;
-  bottom: 8%;
-  background: rgba(215, 194, 139, 0.18);
-  animation: orbFloatB 16s ease-in-out infinite;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 86%);
 }
 
 .login-shell {
-  min-height: 100vh;
-  max-width: 1140px;
-  margin: 0 auto;
-  padding: 20px 24px 28px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) 420px;
-  gap: 34px;
-  align-items: center;
   position: relative;
   z-index: 1;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) 430px;
+  align-items: center;
+  gap: 38px;
 }
 
 .brand-panel {
-  color: var(--text-main);
-  max-width: 640px;
-  padding: 0 10px 0 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 100%;
+  color: #f8f4ec;
 }
 
-.brand-hero {
+.hero-mark {
   position: relative;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: 18px;
+  width: 184px;
+  height: 184px;
+  margin-bottom: 20px;
 }
 
-.brand-glow {
+.hero-ring {
   position: absolute;
-  border-radius: 999px;
-  pointer-events: none;
-  filter: blur(6px);
+  inset: 6px;
+  border-radius: 42px;
+  background: radial-gradient(circle, rgba(215, 194, 139, 0.24) 0%, rgba(215, 194, 139, 0) 72%);
+  filter: blur(8px);
 }
 
-.glow-a {
-  width: 188px;
-  height: 188px;
-  top: -30px;
-  left: -20px;
-  background: radial-gradient(circle, rgba(215, 194, 139, 0.36) 0%, rgba(215, 194, 139, 0) 72%);
-}
-
-.glow-b {
-  width: 148px;
-  height: 148px;
-  top: 20px;
-  left: 48px;
-  background: radial-gradient(circle, rgba(135, 191, 163, 0.28) 0%, rgba(135, 191, 163, 0) 76%);
-}
-
-.brand-badge {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
+.hero-badge {
+  position: absolute;
+  inset: 18px;
+  border-radius: 42px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 150px;
-  height: 150px;
-  border-radius: 40px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
     rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow:
-    0 34px 68px rgba(4, 10, 16, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 0 0 14px rgba(215, 194, 139, 0.08);
-  margin-bottom: 16px;
-  backdrop-filter: blur(14px);
-  animation: heroBreath 6s ease-in-out infinite;
+    0 30px 60px rgba(4, 10, 16, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 18px rgba(215, 194, 139, 0.08);
 }
 
-.brand-badge-icon {
-  width: 102px;
-  height: 102px;
-  display: block;
-  filter:
-    drop-shadow(0 18px 26px rgba(6, 14, 22, 0.26))
-    drop-shadow(0 0 14px rgba(246, 243, 234, 0.18));
+.hero-icon {
+  width: 98px;
+  height: 98px;
+  filter: drop-shadow(0 20px 28px rgba(6, 14, 22, 0.24));
+}
+
+.brand-tag {
+  margin-bottom: 14px;
 }
 
 .brand-panel h1 {
   margin: 0;
-  font-size: 54px;
+  font-size: 56px;
   line-height: 1.04;
-  letter-spacing: 0.02em;
 }
 
 .brand-copy {
-  max-width: 560px;
-  margin: 20px 0 0;
+  max-width: 620px;
+  margin: 18px 0 0;
   font-size: 17px;
-  line-height: 1.8;
-  color: var(--text-soft);
+  line-height: 1.85;
+  color: rgba(248, 244, 236, 0.76);
 }
 
-.brand-cards {
+.brand-grid {
+  margin-top: 28px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 28px;
 }
 
-.info-card {
-  padding: 18px 18px 20px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.12);
+.feature-card {
+  min-height: 176px;
+  color: #eef4ef;
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
-.info-label {
-  display: block;
-  margin-bottom: 10px;
+.feature-label {
   font-size: 12px;
   letter-spacing: 0.08em;
-  color: var(--brand-accent);
-}
-
-.info-card strong {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.7;
-  color: var(--text-main);
+  color: #9fd0b5;
 }
 
 .login-card {
-  align-self: center;
-  border: 1px solid var(--card-border);
   border-radius: 28px;
-  overflow: hidden;
-  background: rgba(251, 248, 241, 0.92);
+  background: rgba(250, 247, 239, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   box-shadow: 0 24px 60px rgba(9, 16, 24, 0.28);
+  backdrop-filter: blur(18px);
 }
 
 .card-head {
-  margin-bottom: 24px;
+  display: grid;
+  gap: 8px;
 }
 
 .card-kicker {
-  margin: 0 0 10px;
-  color: #3f6b56;
+  margin: 0;
   font-size: 12px;
   letter-spacing: 0.12em;
+  color: #3f6b56;
 }
 
 .card-head h2 {
@@ -440,199 +337,72 @@ async function onSubmit() {
   color: #13231a;
 }
 
-.card-copy {
-  margin: 10px 0 0;
-  font-size: 14px;
+.card-head span {
   color: #6b7280;
+  font-size: 14px;
 }
 
-.login-form :deep(.el-input__wrapper) {
-  min-height: 46px;
-  border-radius: 14px;
-  box-shadow: 0 0 0 1px rgba(19, 35, 26, 0.08) inset;
+.login-form {
+  display: grid;
+  gap: 18px;
 }
 
-.submit-btn {
-  width: 100%;
-  height: 46px;
-  border: none;
-  border-radius: 14px;
-  margin-top: 6px;
-  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
-  font-size: 15px;
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: #264334;
   font-weight: 600;
 }
 
-@keyframes curtainFlowA {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.04) rotate(-10deg);
-    opacity: 0.5;
-  }
-  33% {
-    transform: translate3d(9vw, 5vh, 0) scale(1.12) rotate(-6deg);
-  }
-  66% {
-    transform: translate3d(16vw, 13vh, 0) scale(1.08) rotate(-2deg);
-    opacity: 0.58;
-  }
+.submit-btn {
+  margin-top: 4px;
 }
 
-@keyframes curtainFlowB {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.02) rotate(12deg);
-    opacity: 0.48;
-  }
-  50% {
-    transform: translate3d(-18vw, -9vh, 0) scale(1.14) rotate(18deg);
-    opacity: 0.56;
-  }
-}
-
-@keyframes curtainFlowC {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.02) rotate(-4deg);
-    opacity: 0.34;
-  }
-  50% {
-    transform: translate3d(-10vw, -14vh, 0) scale(1.16) rotate(-8deg);
-    opacity: 0.42;
-  }
-}
-
-@keyframes orbFloatA {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-20px, 22px, 0) scale(1.06);
-  }
-}
-
-@keyframes auroraSweepA {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(-10deg) scale(1);
-    opacity: 0.16;
-  }
-  50% {
-    transform: translate3d(6%, 8%, 0) rotate(-7deg) scale(1.12);
-    opacity: 0.24;
-  }
-}
-
-@keyframes auroraSweepB {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(12deg) scale(1);
-    opacity: 0.15;
-  }
-  50% {
-    transform: translate3d(-8%, -7%, 0) rotate(16deg) scale(1.14);
-    opacity: 0.22;
-  }
-}
-
-@keyframes orbFloatB {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(18px, -18px, 0) scale(1.08);
-  }
-}
-
-@keyframes waveDriftA {
+@keyframes driftA {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1.04);
   }
   50% {
-    transform: translate3d(44px, 34px, 0) scale(1.12);
+    transform: translate3d(48px, 22px, 0) scale(1.12);
   }
 }
 
-@keyframes waveDriftB {
+@keyframes driftB {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) scale(1.03);
+    transform: translate3d(0, 0, 0) scale(1.04);
   }
   50% {
-    transform: translate3d(-40px, -38px, 0) scale(1.1);
+    transform: translate3d(-56px, 26px, 0) scale(1.14);
   }
 }
 
-@keyframes gridFloat {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, 10px, 0);
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes heroBreath {
+@keyframes driftC {
   0%,
   100% {
-    transform: translate3d(0, 0, 0);
-    box-shadow:
-      0 34px 68px rgba(4, 10, 16, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.24),
-      0 0 0 14px rgba(215, 194, 139, 0.08);
+    transform: translate3d(0, 0, 0) scale(1.02);
   }
   50% {
-    transform: translate3d(0, -4px, 0);
-    box-shadow:
-      0 42px 82px rgba(4, 10, 16, 0.34),
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      0 0 0 18px rgba(215, 194, 139, 0.1);
+    transform: translate3d(-18px, -34px, 0) scale(1.08);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bg-curtain,
-  .bg-aurora,
-  .bg-grid,
-  .bg-wave,
-  .bg-orb,
-  .brand-badge {
-    animation: none !important;
-  }
-}
-
-@media (max-width: 980px) {
+@media (max-width: 1024px) {
   .login-shell {
     grid-template-columns: 1fr;
-    padding: 18px 18px 28px;
-  }
-
-  .brand-panel {
-    padding-right: 0;
-  }
-
-  .brand-badge {
-    width: 118px;
-    height: 118px;
-    border-radius: 30px;
-  }
-
-  .brand-badge-icon {
-    width: 78px;
-    height: 78px;
+    gap: 26px;
   }
 
   .brand-panel h1 {
-    font-size: 36px;
+    font-size: 40px;
   }
 
-  .brand-cards {
+  .brand-grid {
     grid-template-columns: 1fr;
   }
 

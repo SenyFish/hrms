@@ -1,18 +1,11 @@
 import { defineStore } from "pinia";
 import http from "@/api/http";
-
-export interface MenuItem {
-  id: number;
-  parentId: number;
-  title: string;
-  path: string;
-  icon?: string;
-}
+import type { MenuItem, UserProfile } from "@/types/auth";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
     token: localStorage.getItem("token") || "",
-    profile: null as Record<string, unknown> | null,
+    profile: null as UserProfile | null,
     menus: [] as MenuItem[],
   }),
   actions: {
@@ -27,9 +20,9 @@ export const useUserStore = defineStore("user", {
       localStorage.removeItem("token");
     },
     async fetchProfile() {
-      const data = (await http.get("/auth/me")) as Record<string, unknown>;
+      const data = (await http.get("/auth/me")) as UserProfile;
       this.profile = data;
-      this.menus = (data.menus as MenuItem[]) || [];
+      this.menus = data.menus || [];
     },
   },
 });

@@ -10,4 +10,6 @@ public interface EmployeeCareRecordRepository extends JpaRepository<EmployeeCare
     Optional<EmployeeCareRecord> findTopByOrderByIdDesc();
 
     boolean existsByPlan_Id(Long planId);
+
+    void deleteByUser_Id(Long userId);
 }

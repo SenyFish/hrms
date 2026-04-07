@@ -19,6 +19,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final UserProfileAssembler userProfileAssembler;
 
     public Map<String, Object> login(LoginRequest req) {
         User user = userRepository.findByUsername(req.getUsername())
@@ -32,21 +33,9 @@ public class AuthService {
         String roleCode = user.getRole() != null ? user.getRole().getCode() : "";
         String token = jwtUtil.createToken(user.getId(), user.getUsername(), roleCode);
 
-        Map<String, Object> profile = new HashMap<>();
-        profile.put("id", user.getId());
-        profile.put("username", user.getUsername());
-        profile.put("realName", user.getRealName());
-        profile.put("employeeNo", user.getEmployeeNo());
-        profile.put("departmentId", user.getDepartmentId());
-        profile.put("phone", user.getPhone());
-        profile.put("email", user.getEmail());
-        profile.put("roleId", user.getRole() != null ? user.getRole().getId() : null);
-        profile.put("roleName", user.getRole() != null ? user.getRole().getName() : null);
-        profile.put("roleCode", roleCode);
-
         Map<String, Object> res = new HashMap<>();
         res.put("token", token);
-        res.put("user", profile);
+        res.put("user", userProfileAssembler.toProfile(user, false));
         return res;
     }
 

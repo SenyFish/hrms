@@ -13,5 +13,9 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
 
     List<SalaryRecord> findByUser_IdOrderBySalaryMonthDesc(Long userId);
 
+    Optional<SalaryRecord> findTopByUser_IdOrderBySalaryMonthDescIdDesc(Long userId);
+
     List<SalaryRecord> findByInsuredCity_Id(Long insuredCityId);
+
+    void deleteByUser_Id(Long userId);
 }

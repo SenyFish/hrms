@@ -2,9 +2,11 @@ package com.hrms.controller;
 
 import com.hrms.common.ApiResponse;
 import com.hrms.entity.AttendanceRecord;
+import com.hrms.entity.BusinessTripRequest;
 import com.hrms.entity.EmployeeCarePlan;
 import com.hrms.entity.User;
 import com.hrms.repository.AttendanceRecordRepository;
+import com.hrms.repository.BusinessTripRequestRepository;
 import com.hrms.repository.EmployeeCarePlanRepository;
 import com.hrms.repository.LeaveRequestRepository;
 import com.hrms.repository.UserRepository;
@@ -20,6 +22,7 @@ import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,19 +35,31 @@ public class DashboardController {
     private final LeaveRequestRepository leaveRequestRepository;
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final EmployeeCarePlanRepository carePlanRepository;
+    private final BusinessTripRequestRepository businessTripRequestRepository;
 
     @GetMapping("/summary")
     public ApiResponse<Map<String, Object>> summary(@AuthenticationPrincipal LoginUser loginUser) {
         long empCount = userRepository.count();
         long pendingLeaves = leaveRequestRepository.findByStatusOrderByCreatedAtDesc("待审批").size();
+        long pendingTrips = businessTripRequestRepository.count((root, query, cb) -> cb.equal(root.get("status"), "待审批"));
         LocalDate today = LocalDate.now();
         List<AttendanceRecord> todayAtt = attendanceRecordRepository.findByAttDateBetweenOrderByAttDateAsc(today, today);
         long clocked = todayAtt.stream().filter(a -> a.getClockIn() != null).count();
         long pendingCarePlans = carePlanRepository.count((root, query, cb) -> cb.equal(root.get("status"), "待执行"));
+        Instant now = Instant.now();
+        long activeLeaves = leaveRequestRepository.count((root, query, cb) -> cb.and(
+                cb.equal(root.get("status"), "已通过"),
+                cb.lessThanOrEqualTo(root.get("startTime"), now),
+                cb.greaterThanOrEqualTo(root.get("endTime"), now)
+        ));
+        long approvedTrips = businessTripRequestRepository.count((root, query, cb) -> cb.equal(root.get("status"), "已通过"));
 
         Map<String, Object> m = new HashMap<>();
         m.put("employeeCount", empCount);
         m.put("pendingLeaveCount", pendingLeaves);
+        m.put("pendingTripCount", pendingTrips);
+        m.put("activeLeaveCount", activeLeaves);
+        m.put("approvedTripCount", approvedTrips);
         m.put("todayAttendanceCount", todayAtt.size());
         m.put("todayClockInCount", clocked);
         m.put("pendingCarePlanCount", pendingCarePlans);
@@ -56,6 +71,16 @@ public class DashboardController {
                         "employeeNo", safe(u.getEmployeeNo()),
                         "departmentId", u.getDepartmentId() != null ? u.getDepartmentId() : 0
                 ));
+                m.put("myLeaveCount", leaveRequestRepository.count((root, query, cb) -> cb.equal(root.join("user").get("id"), u.getId())));
+                m.put("myTripCount", businessTripRequestRepository.count((root, query, cb) -> cb.equal(root.join("user").get("id"), u.getId())));
+                m.put("myPendingLeaveCount", leaveRequestRepository.count((root, query, cb) -> cb.and(
+                        cb.equal(root.join("user").get("id"), u.getId()),
+                        cb.equal(root.get("status"), "待审批")
+                )));
+                m.put("myPendingTripCount", businessTripRequestRepository.count((root, query, cb) -> cb.and(
+                        cb.equal(root.join("user").get("id"), u.getId()),
+                        cb.equal(root.get("status"), "待审批")
+                )));
             });
         }
         return ApiResponse.ok(m);

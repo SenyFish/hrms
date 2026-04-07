@@ -1,85 +1,31 @@
 package com.hrms.config;
 
 import com.hrms.entity.Menu;
-import com.hrms.entity.Role;
 import com.hrms.repository.MenuRepository;
-import com.hrms.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
 public class CareMenuInitializer implements CommandLineRunner {
 
     private final MenuRepository menuRepository;
-    private final RoleRepository roleRepository;
+    private final MenuBootstrapSupport menuBootstrapSupport;
 
     @Override
     public void run(String... args) {
-        Menu care = ensureMenu("员工关怀", "/care", "Calendar", 70, 0L);
-        Menu plans = ensureMenu("关怀计划", "/care/plans", "Document", 71, care.getId());
-        Menu stats = ensureMenu("关怀统计", "/care/stats", "DataAnalysis", 73, care.getId());
+        Menu care = menuBootstrapSupport.ensureMenu("员工关怀", "/care", "Calendar", 70, 0L);
+        Menu plans = menuBootstrapSupport.ensureMenu("关怀计划", "/care/plans", "Document", 71, care.getId());
+        Menu stats = menuBootstrapSupport.ensureMenu("关怀统计", "/care/stats", "DataAnalysis", 73, care.getId());
 
-        attachMenus("ADMIN", care, plans, stats);
-        attachMenus("HR", care, plans, stats);
+        menuBootstrapSupport.attachMenus("ADMIN", care, plans, stats);
+        menuBootstrapSupport.attachMenus("HR", care, plans, stats);
 
         menuRepository.findByPath("/care/records").ifPresent(records -> {
-            detachMenu("ADMIN", records);
-            detachMenu("HR", records);
+            menuBootstrapSupport.detachMenu("ADMIN", records);
+            menuBootstrapSupport.detachMenu("HR", records);
             menuRepository.delete(records);
-        });
-    }
-
-    private Menu ensureMenu(String title, String path, String icon, int sortOrder, Long parentId) {
-        Optional<Menu> existing = menuRepository.findByPath(path);
-        if (existing.isPresent()) {
-            Menu menu = existing.get();
-            menu.setTitle(title);
-            menu.setIcon(icon);
-            menu.setSortOrder(sortOrder);
-            menu.setParentId(parentId);
-            return menuRepository.save(menu);
-        }
-        Menu menu = new Menu();
-        menu.setTitle(title);
-        menu.setPath(path);
-        menu.setIcon(icon);
-        menu.setSortOrder(sortOrder);
-        menu.setParentId(parentId);
-        return menuRepository.save(menu);
-    }
-
-    private void attachMenus(String roleCode, Menu... menus) {
-        roleRepository.findByCode(roleCode).ifPresent(role -> {
-            if (role.getMenus() == null) {
-                role.setMenus(new HashSet<>());
-            }
-            boolean changed = false;
-            for (Menu menu : menus) {
-                if (role.getMenus().stream().noneMatch(item -> item.getId().equals(menu.getId()))) {
-                    role.getMenus().add(menu);
-                    changed = true;
-                }
-            }
-            if (changed) {
-                roleRepository.save(role);
-            }
-        });
-    }
-
-    private void detachMenu(String roleCode, Menu menu) {
-        roleRepository.findByCode(roleCode).ifPresent(role -> {
-            if (role.getMenus() == null) {
-                return;
-            }
-            boolean changed = role.getMenus().removeIf(item -> item.getId().equals(menu.getId()));
-            if (changed) {
-                roleRepository.save(role);
-            }
         });
     }
 }

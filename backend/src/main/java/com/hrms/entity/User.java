@@ -28,6 +28,8 @@ public class User {
 
     private String employeeNo;
 
+    private String positionName;
+
     private Long departmentId;
 
     @ManyToOne(fetch = FetchType.EAGER)

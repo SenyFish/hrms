@@ -1,109 +1,122 @@
 <template>
-  <el-card>
+  <UCard variant="soft">
     <template #header>
       <div class="header-bar">
         <span>关怀计划</span>
         <div class="actions">
-          <el-button type="success" @click="exportPlans">导出</el-button>
-          <el-button type="primary" @click="open()">新增计划</el-button>
+          <UButton color="success" icon="i-lucide-download" :loading="exporting" @click="exportPlans">导出</UButton>
+          <UButton color="primary" icon="i-lucide-plus" @click="open()">新增计划</UButton>
         </div>
       </div>
     </template>
 
     <div class="toolbar">
-      <el-input
+      <UInput
         v-model="query.keyword"
+        class="toolbar-input"
+        size="lg"
+        variant="subtle"
+        icon="i-lucide-search"
         placeholder="请输入计划编号、员工姓名或关怀类型"
-        clearable
-        style="width: 320px"
         @keyup.enter="search"
       />
-      <el-select v-model="query.status" clearable placeholder="状态" style="width: 140px" @change="search">
-        <el-option label="待执行" value="待执行" />
-        <el-option label="已完成" value="已完成" />
-      </el-select>
-      <el-button type="primary" @click="search">查询</el-button>
-      <el-button @click="resetSearch">重置</el-button>
+      <USelectMenu v-model="query.status" :items="statusOptions" class="status-select" @update:model-value="search" />
+      <UButton color="primary" @click="search">查询</UButton>
+      <UButton color="neutral" variant="soft" @click="resetSearch">重置</UButton>
     </div>
 
-    <el-table :data="rows" border>
-      <el-table-column prop="planCode" label="计划编号" width="170" />
-      <el-table-column label="关怀员工" width="120">
-        <template #default="{ row }">{{ row.user?.realName || "-" }}</template>
-      </el-table-column>
-      <el-table-column label="工号" width="120">
-        <template #default="{ row }">{{ row.user?.employeeNo || "-" }}</template>
-      </el-table-column>
-      <el-table-column prop="careType" label="关怀类型" width="120" />
-      <el-table-column label="计划时间" width="180">
-        <template #default="{ row }">{{ formatDateTime(row.plannedTime) }}</template>
-      </el-table-column>
-      <el-table-column prop="budgetAmount" label="预算金额" width="120" />
-      <el-table-column prop="status" label="状态" width="100" />
-      <el-table-column prop="content" label="关怀内容" min-width="220" show-overflow-tooltip />
-      <el-table-column label="操作" width="150" fixed="right">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="open(row)">编辑</el-button>
-          <el-button type="danger" link @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <UTable :data="rows" :columns="columns" :loading="loading" class="table-wrap">
+      <template #user-cell="{ row }">{{ row.original.user?.realName || "-" }}</template>
+      <template #employeeNo-cell="{ row }">{{ row.original.user?.employeeNo || "-" }}</template>
+      <template #plannedTime-cell="{ row }">{{ formatDateTime(row.original.plannedTime) }}</template>
+      <template #budgetAmount-cell="{ row }">¥{{ Number(row.original.budgetAmount || 0).toFixed(2) }}</template>
+      <template #status-cell="{ row }">
+        <UBadge :color="row.original.status === '已完成' ? 'success' : 'warning'" variant="soft">
+          {{ row.original.status || "-" }}
+        </UBadge>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="action-group">
+          <UButton color="primary" variant="ghost" size="sm" @click="open(row.original)">编辑</UButton>
+          <UButton color="error" variant="ghost" size="sm" @click="remove(row.original)">删除</UButton>
+        </div>
+      </template>
+    </UTable>
 
     <div class="pager">
-      <el-pagination
-        v-model:current-page="query.page"
-        v-model:page-size="query.size"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :page-sizes="[10, 20, 50, 100]"
+      <span class="pager-total">共 {{ total }} 条</span>
+      <UPagination
+        v-model:page="query.page"
         :total="total"
-        @current-change="load"
-        @size-change="handleSizeChange"
+        :items-per-page="query.size"
+        show-edges
+        @update:page="load"
+      />
+      <USelectMenu
+        v-model="query.size"
+        :items="pageSizeOptions"
+        value-key="value"
+        label-key="label"
+        class="size-select"
+        @update:model-value="handleSizeChange"
       />
     </div>
 
-    <el-dialog v-model="visible" :title="form.id ? '编辑关怀计划' : '新增关怀计划'" width="640px">
-      <el-form :model="form" label-width="110px">
-        <el-form-item label="关怀员工">
-          <el-select v-model="form.userId" filterable style="width: 100%">
-            <el-option v-for="item in users" :key="item.id" :label="`${item.realName}（${item.employeeNo}）`" :value="item.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关怀类型">
-          <el-select v-model="form.careType" style="width: 100%">
-            <el-option label="生日慰问" value="生日慰问" />
-            <el-option label="节日关怀" value="节日关怀" />
-            <el-option label="入职回访" value="入职回访" />
-            <el-option label="困难帮扶" value="困难帮扶" />
-            <el-option label="日常关怀" value="日常关怀" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="计划时间">
-          <el-date-picker v-model="form.plannedTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss[Z]" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="预算金额">
-          <el-input-number v-model="form.budgetAmount" :min="0" :precision="2" :step="100" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status" style="width: 100%">
-            <el-option label="待执行" value="待执行" />
-            <el-option label="已完成" value="已完成" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关怀内容"><el-input v-model="form.content" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+    <UModal v-model:open="visible" :title="form.id ? '编辑关怀计划' : '新增关怀计划'">
+      <template #body>
+        <div class="form-grid">
+          <div class="field-block field-block-full">
+            <label class="field-label">关怀员工</label>
+            <USelectMenu
+              v-model="form.userId"
+              :items="userOptions"
+              value-key="id"
+              label-key="label"
+              searchable
+              class="w-full"
+            />
+          </div>
+          <div class="field-block">
+            <label class="field-label">关怀类型</label>
+            <USelectMenu v-model="form.careType" :items="careTypeOptions" class="w-full" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">计划时间</label>
+            <UInput v-model="form.plannedTime" type="datetime-local" size="lg" variant="subtle" icon="i-lucide-calendar-heart" class="time-input" />
+            <span class="field-hint">选择计划执行的具体时间。</span>
+          </div>
+          <div class="field-block">
+            <label class="field-label">预算金额</label>
+            <UInputNumber v-model="form.budgetAmount" :min="0" :step="100" />
+          </div>
+          <div class="field-block">
+            <label class="field-label">状态</label>
+            <USelectMenu v-model="form.status" :items="['待执行', '已完成']" class="w-full" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">关怀内容</label>
+            <UTextarea v-model="form.content" :rows="3" />
+          </div>
+          <div class="field-block field-block-full">
+            <label class="field-label">备注</label>
+            <UTextarea v-model="form.remark" :rows="2" />
+          </div>
+        </div>
       </template>
-    </el-dialog>
-  </el-card>
+      <template #footer>
+        <div class="modal-actions">
+          <UButton color="neutral" variant="soft" @click="visible = false">取消</UButton>
+          <UButton color="primary" :loading="saving" @click="save">保存</UButton>
+        </div>
+      </template>
+    </UModal>
+  </UCard>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { computed, onMounted, reactive, ref } from "vue";
+import type { TableColumn } from "@nuxt/ui";
+import { useToast } from "@nuxt/ui/composables";
 import http from "@/api/http";
 import { downloadByFetch } from "@/utils/download";
 import { useUserStore } from "@/stores/user";
@@ -112,11 +125,15 @@ type UserOption = { id: number; realName: string; employeeNo: string };
 type PlanRow = Record<string, any> & { id?: number };
 type PageData = { list: PlanRow[]; total: number };
 
+const toast = useToast();
+const store = useUserStore();
 const rows = ref<PlanRow[]>([]);
 const total = ref(0);
 const users = ref<UserOption[]>([]);
 const visible = ref(false);
-const store = useUserStore();
+const loading = ref(false);
+const saving = ref(false);
+const exporting = ref(false);
 const query = reactive({ keyword: "", status: "", page: 1, size: 10 });
 const form = reactive({
   id: undefined as number | undefined,
@@ -128,6 +145,35 @@ const form = reactive({
   remark: "",
   budgetAmount: 0,
 });
+
+const pageSizeOptions = [
+  { label: "10 条/页", value: 10 },
+  { label: "20 条/页", value: 20 },
+  { label: "50 条/页", value: 50 },
+  { label: "100 条/页", value: 100 },
+];
+
+const statusOptions = ["", "待执行", "已完成"];
+const careTypeOptions = ["生日慰问", "节日关怀", "入职回访", "困难帮扶", "日常关怀"];
+
+const columns: TableColumn<PlanRow>[] = [
+  { accessorKey: "planCode", header: "计划编号" },
+  { accessorKey: "user", header: "关怀员工" },
+  { accessorKey: "employeeNo", header: "工号" },
+  { accessorKey: "careType", header: "关怀类型" },
+  { accessorKey: "plannedTime", header: "计划时间" },
+  { accessorKey: "budgetAmount", header: "预算金额" },
+  { accessorKey: "status", header: "状态" },
+  { accessorKey: "content", header: "关怀内容" },
+  { accessorKey: "actions", header: "操作" },
+];
+
+const userOptions = computed(() =>
+  users.value.map((item) => ({
+    id: item.id,
+    label: `${item.realName}（${item.employeeNo}）`,
+  }))
+);
 
 function resetForm() {
   form.id = undefined;
@@ -142,13 +188,23 @@ function resetForm() {
 
 function formatDateTime(value?: string) {
   if (!value) return "-";
-  return value.replace("T", " ").replace(".000+00:00", "");
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 async function load() {
-  const data = (await http.get("/care/plans", { params: { ...query, keyword: query.keyword || undefined, status: query.status || undefined } })) as PageData;
-  rows.value = data.list || [];
-  total.value = data.total || 0;
+  loading.value = true;
+  try {
+    const data = (await http.get("/care/plans", {
+      params: { ...query, keyword: query.keyword || undefined, status: query.status || undefined },
+    })) as PageData;
+    rows.value = data.list || [];
+    total.value = data.total || 0;
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function loadUsers() {
@@ -178,7 +234,7 @@ function open(row?: PlanRow) {
     form.id = row.id as number;
     form.userId = row.user?.id;
     form.careType = row.careType || "日常关怀";
-    form.plannedTime = (row.plannedTime || "").replace(".000+00:00", "Z");
+    form.plannedTime = row.plannedTime ? String(row.plannedTime).slice(0, 16) : "";
     form.status = row.status || "待执行";
     form.content = row.content || "";
     form.remark = row.remark || "";
@@ -191,32 +247,39 @@ function open(row?: PlanRow) {
 
 async function save() {
   if (!form.userId) {
-    ElMessage.warning("请选择关怀员工");
+    toast.add({ title: "请选择关怀员工", color: "warning" });
     return;
   }
   if (!form.content.trim()) {
-    ElMessage.warning("请输入关怀内容");
+    toast.add({ title: "请输入关怀内容", color: "warning" });
     return;
   }
-  const payload = { ...form, plannedTime: form.plannedTime || undefined };
-  if (form.id) {
-    await http.put(`/care/plans/${form.id}`, payload);
-  } else {
-    await http.post("/care/plans", payload);
+  const payload = { ...form, plannedTime: form.plannedTime ? `${form.plannedTime}:00Z` : undefined };
+  saving.value = true;
+  try {
+    if (form.id) {
+      await http.put(`/care/plans/${form.id}`, payload);
+    } else {
+      await http.post("/care/plans", payload);
+    }
+    toast.add({ title: "保存成功", color: "success" });
+    visible.value = false;
+    await load();
+  } finally {
+    saving.value = false;
   }
-  ElMessage.success("保存成功");
-  visible.value = false;
-  await load();
 }
 
 async function remove(row: PlanRow) {
-  await ElMessageBox.confirm("确定删除这条关怀计划吗？", "提示");
+  const confirmed = window.confirm("确定删除这条关怀计划吗？");
+  if (!confirmed) return;
   await http.delete(`/care/plans/${row.id}`);
-  ElMessage.success("已删除");
+  toast.add({ title: "已删除", color: "success" });
   await load();
 }
 
 async function exportPlans() {
+  exporting.value = true;
   try {
     const params = new URLSearchParams();
     if (query.keyword) params.set("keyword", query.keyword);
@@ -226,8 +289,14 @@ async function exportPlans() {
       { headers: { Authorization: `Bearer ${store.token}` } },
       "care-plans.xlsx"
     );
+    toast.add({ title: "导出已开始", color: "success" });
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "导出失败");
+    toast.add({
+      title: error instanceof Error ? error.message : "导出失败",
+      color: "error",
+    });
+  } finally {
+    exporting.value = false;
   }
 }
 
@@ -237,9 +306,108 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.header-bar,.toolbar,.pager,.actions{display:flex}
-.header-bar{align-items:center;justify-content:space-between}
-.toolbar{gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.pager{justify-content:flex-end;margin-top:16px}
-.actions{gap:12px}
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-input {
+  width: 320px;
+}
+
+.status-select {
+  width: 140px;
+}
+
+.table-wrap {
+  overflow: hidden;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
+.pager {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.pager-total {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.size-select {
+  width: 120px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field-block {
+  display: grid;
+  gap: 8px;
+}
+
+.field-block-full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #264334;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #7b8a83;
+}
+
+.time-input :deep(input) {
+  min-height: 44px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .toolbar-input,
+  .status-select {
+    width: 100%;
+  }
+
+  .pager {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

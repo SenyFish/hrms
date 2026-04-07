@@ -1,6 +1,7 @@
 package com.hrms.controller;
 
 import com.hrms.common.ApiResponse;
+import com.hrms.dto.ProfileUpdateRequest;
 import com.hrms.dto.UserSaveRequest;
 import com.hrms.entity.User;
 import com.hrms.security.LoginUser;
@@ -70,9 +71,25 @@ public class UserController {
         return ApiResponse.ok(userService.save(req));
     }
 
+    @PutMapping("/profile")
+    public ApiResponse<User> updateOwnProfile(@Valid @RequestBody ProfileUpdateRequest req,
+                                              @AuthenticationPrincipal LoginUser loginUser) {
+        if (loginUser == null) {
+            throw new AccessDeniedException("未登录");
+        }
+        return ApiResponse.ok(userService.updateOwnProfile(loginUser.getUserId(), req));
+    }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
-        assertAdmin(loginUser);
+        assertAdminOrHr(loginUser);
+        if (loginUser.getUserId().equals(id)) {
+            throw new AccessDeniedException("不能删除当前登录账号");
+        }
+        User target = userService.get(id);
+        if (isHr(loginUser) && target.getRole() != null && "ADMIN".equals(target.getRole().getCode())) {
+            throw new AccessDeniedException("人事无权删除管理员账号");
+        }
         userService.delete(id);
         return ApiResponse.ok();
     }

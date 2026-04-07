@@ -1,11 +1,9 @@
 package com.hrms.config;
 
-import com.hrms.entity.AssetInfo;
 import com.hrms.entity.AttendanceRecord;
 import com.hrms.entity.Department;
 import com.hrms.entity.LeaveRequest;
 import com.hrms.entity.User;
-import com.hrms.repository.AssetInfoRepository;
 import com.hrms.repository.AttendanceRecordRepository;
 import com.hrms.repository.DepartmentRepository;
 import com.hrms.repository.LeaveRequestRepository;
@@ -28,13 +26,10 @@ public class StatusDataMigrationRunner implements CommandLineRunner {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final DepartmentRepository departmentRepository;
-    private final AssetInfoRepository assetInfoRepository;
-
     @Override
     public void run(String... args) {
         migrateAttendanceStatuses();
         migrateLeaveStatuses();
-        migrateAssetStatuses();
     }
 
     private void migrateAttendanceStatuses() {
@@ -64,21 +59,6 @@ public class StatusDataMigrationRunner implements CommandLineRunner {
         }
         if (changed) {
             leaveRequestRepository.saveAll(requests);
-        }
-    }
-
-    private void migrateAssetStatuses() {
-        List<AssetInfo> assets = assetInfoRepository.findAll();
-        boolean changed = false;
-        for (AssetInfo asset : assets) {
-            String mapped = mapAssetStatus(asset.getStatus(), asset.getQuantity());
-            if (!mapped.equals(asset.getStatus())) {
-                asset.setStatus(mapped);
-                changed = true;
-            }
-        }
-        if (changed) {
-            assetInfoRepository.saveAll(assets);
         }
     }
 
@@ -138,17 +118,6 @@ public class StatusDataMigrationRunner implements CommandLineRunner {
             case "leave" -> "请假";
             default -> status;
         };
-    }
-
-    private String mapAssetStatus(String status, Integer quantity) {
-        int remain = quantity != null ? quantity : 0;
-        if (remain <= 0) {
-            return "已领完";
-        }
-        if (status == null || status.isBlank() || "在用".equals(status)) {
-            return "在库";
-        }
-        return status;
     }
 
     private LocalTime parseWorkTime(String value, LocalTime fallback) {
