@@ -6,7 +6,7 @@
 
 <!-- README-I18N:START -->
 
-[English](./README.md) | **中文**
+[English](./README-en.md) | **中文**
 
 <!-- README-I18N:END -->
 
