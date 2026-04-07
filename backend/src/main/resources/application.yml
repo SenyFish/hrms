@@ -27,4 +27,4 @@ hrms:
     expire-hours: ${JWT_EXPIRE_HOURS:168}
   upload-dir: ${UPLOAD_DIR:${user.home}/hrms-uploads}
   cors:
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,https://*.onefish.online}
