@@ -37,7 +37,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./docker-data/hrms-uploads:/app/uploads
+      - hrms_uploads:/app/uploads
 
   frontend:
     image: ghcr.io/senyfish/hrms-frontend:dev
@@ -50,3 +50,4 @@ services:
 
 volumes:
   mysql_data:
+  hrms_uploads:

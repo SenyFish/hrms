@@ -1,12 +1,10 @@
 # <img src="frontend/public/favicon.svg" alt="HRMS logo" width="28" /> HRMS
 
-Human Resource Management System built with a separated frontend and backend architecture.
-
-This repository combines a Spring Boot 3 API, a Vue 3 admin client, and a MySQL database to cover common HR workflows such as employee management, attendance, payroll, recruitment, training, employee relations, and care planning.
+Human Resource Management System built with a separated frontend and backend architecture, covering common HR scenarios such as employees, attendance, payroll, recruitment, training, employee relations, and employee care.
 
 <!-- README-I18N:START -->
 
-**English** | [中文](./README.zh.md)
+**English** | [中文](./README.md)
 
 <!-- README-I18N:END -->
 
@@ -15,60 +13,60 @@ This repository combines a Spring Boot 3 API, a Vue 3 admin client, and a MySQL 
 - Backend: Spring Boot 3, Spring Security, Spring Data JPA, JWT, MySQL, Apache POI
 - Frontend: Vue 3, Vite, TypeScript, Pinia, Vue Router, Nuxt UI, ECharts
 - Database: MySQL 8
-- Deployment: local development or Docker Compose
+- Delivery options: local development, Docker Compose, GitHub Actions + GHCR
 
-## Features
+## Modules
 
-| Area | What it covers |
+| Module | Description |
 | --- | --- |
-| Dashboard | Attendance trend charts, summary cards, user profile, care reminders |
-| System management | Employees, departments, notices, file upload and download |
-| Permissions | Role management, menu assignment, route-level access control |
+| Dashboard | Summary cards, attendance trends, profile info, care reminders |
+| System Management | Employees, departments, notices, file upload and download |
+| Permission Management | Roles, menus, and route-level access control |
 | Payroll | Salary records, insured cities, performance data, Excel export |
-| Attendance | Leave requests, attendance records, business trips, approvals |
-| Recruitment | Requirements, positions, candidates |
-| Employee relations | Contracts and disputes |
+| Attendance | Leave requests, attendance records, business trips, approval flows |
+| Recruitment | Hiring requirements, positions, and candidates |
+| Employee Relations | Contracts and labor disputes |
 | Training | Training sessions and promotion planning |
-| Employee care | Care plans, reminders, statistics |
+| Employee Care | Care plans, reminders, and statistics |
 
-## Architecture
+## Project Structure
 
 ```text
 hrms/
 |-- backend/                 Spring Boot API
 |-- frontend/                Vue 3 + Vite admin app
-|-- database/                SQL bootstrap script
-|-- docker-compose.yml       Containerized local deployment
+|-- database/                MySQL bootstrap script and database image Dockerfile
+|-- docker-compose.yml       Compose stack based on GHCR images
 |-- DEPLOY-DOCKER.md         Docker deployment notes
-`-- README-en.md             English documentation
+`-- .github/workflows/       CI/CD workflows
 ```
 
 ## Quick Start
 
-### Prerequisites
+### Requirements
 
 - JDK 17+
 - Maven 3.8+
-- Node.js 18+
+- Node.js 24+
 - MySQL 8.x
 
-### 1. Create the database
+### 1. Initialize the database
 
-Create a MySQL database named `hrms` with `utf8mb4` encoding.
+Create a MySQL database named `hrms` using `utf8mb4`.
 
 You can either:
 
-- import [`database/init-hrms.sql`](database/init-hrms.sql), or
-- create an empty database and let Hibernate update the schema on first run
+- import [`database/init-hrms.sql`](./database/init-hrms.sql)
+- or create an empty database and let Hibernate update the schema on first startup
 
-The backend defaults are defined in [`backend/src/main/resources/application.yml`](backend/src/main/resources/application.yml):
+Default backend settings are defined in [application.yml](./backend/src/main/resources/application.yml):
 
-- database URL: `jdbc:mysql://localhost:3306/hrms...`
-- username: `root`
-- password: `root`
+- Database URL: `jdbc:mysql://localhost:3306/hrms...`
+- Username: `root`
+- Password: `root`
 
 > [!NOTE]
-> On a fresh database, the backend seeds demo users, menus, departments, notices, salary data, and attendance samples automatically when no users exist.
+> If the database has no users yet, the backend seeds demo accounts, menus, departments, notices, payroll data, and attendance sample data automatically on first startup.
 
 ### 2. Start the backend
 
@@ -77,7 +75,7 @@ cd backend
 mvn spring-boot:run
 ```
 
-The API starts on `http://localhost:8080`.
+Default address: `http://localhost:8080`
 
 ### 3. Start the frontend
 
@@ -87,13 +85,13 @@ npm install
 npm run dev
 ```
 
-The frontend starts on `http://localhost:5173`.
+Default address: `http://localhost:5173`
 
-Vite proxies `/api` requests to `http://localhost:8080`, so the frontend and backend work together without extra local proxy setup.
+In development, the frontend proxies `/api` requests to `http://localhost:8080`.
 
 ## Demo Accounts
 
-The application seeds these accounts on first startup:
+The following accounts are available after first-time initialization:
 
 | Username | Password | Role |
 | --- | --- | --- |
@@ -101,18 +99,9 @@ The application seeds these accounts on first startup:
 | `hr` | `hr123` | HR |
 | `emp` | `emp123` | Employee |
 
-## Environment Notes
+## Docker Deployment
 
-- JWT secret and expiration are configurable through environment variables.
-- Uploaded files are stored under `${user.home}/hrms-uploads` by default.
-- CORS defaults allow local development on `localhost` and `127.0.0.1`.
-
-> [!IMPORTANT]
-> Replace the default JWT secret and database credentials before using this project outside local development.
-
-## Docker Compose
-
-This repository includes Dockerfiles for MySQL, the backend, and the frontend plus a `docker-compose.yml` for the full stack.
+The repository now deploys by pulling prebuilt images from GHCR instead of building locally.
 
 ```bash
 docker compose pull
@@ -125,31 +114,88 @@ Default container endpoints:
 - backend: `http://localhost:8080`
 - mysql: `localhost:3306`
 
-The MySQL image now includes [`database/init-hrms.sql`](database/init-hrms.sql), so the database bootstrap script is imported automatically when the MySQL data volume is empty on first startup.
+Current Compose images:
 
-## API and Auth
+- `ghcr.io/senyfish/hrms-mysql:dev`
+- `ghcr.io/senyfish/hrms-backend:dev`
+- `ghcr.io/senyfish/hrms-frontend:dev`
 
-- API base path: `/api`
-- Authentication: JWT bearer token
+The MySQL image already includes [`database/init-hrms.sql`](./database/init-hrms.sql), so the bootstrap script runs automatically the first time the MySQL data volume starts with an empty data directory.
+
+> [!IMPORTANT]
+> The current `docker-compose.yml` keeps the database password, JWT secret, and image tags as fixed plain-text values for the current deployment flow. Replace them with your own secure values before using this setup in production.
+
+## CI/CD
+
+The repository includes two GitHub Actions workflows:
+
+- `CI`
+  - Runs on `push` and `pull_request` targeting `dev` and `main`
+  - Backend runs `mvn -B test`
+  - Frontend runs `npm ci --registry=https://registry.npmjs.org --no-audit --no-fund` and `npm run build`
+- `Docker Publish`
+  - Runs on pushes to `dev` and `main`, plus `v*` tags
+  - Builds and publishes MySQL, backend, and frontend images to GHCR
+
+Default tag rules:
+
+- `dev` branch: `dev`, `dev-<sha>`, `sha-<sha>`
+- `main` branch: `latest`, `main-<sha>`, `sha-<sha>`
+- `v*` tags: matching version tags
+
+## Runtime Configuration
+
+The backend supports overriding these key settings through environment variables:
+
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `JWT_EXPIRE_HOURS`
+- `UPLOAD_DIR`
+- `CORS_ALLOWED_ORIGIN_PATTERNS`
+
+The default upload directory is `/app/uploads`; in the current Compose setup it is backed by the Docker named volume `hrms_uploads`.
+
+## API and Authentication
+
+- API prefix: `/api`
+- Authentication: JWT Bearer Token
 - Frontend token storage: `localStorage`
-- Auth endpoints: `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
+- Common auth endpoints:
+  - `/api/auth/login`
+  - `/api/auth/logout`
+  - `/api/auth/me`
+
+## Main Pages
+
+Current frontend routes include:
+
+- `/home`
+- `/system/files`
+- `/system/employees`
+- `/system/departments`
+- `/permission/roles`
+- `/permission/menus`
+- `/salary/records`
+- `/salary/cities`
+- `/salary/performance`
+- `/attendance/leaves`
+- `/attendance/records`
+- `/attendance/trips`
+- `/recruitment/requirements`
+- `/recruitment/positions`
+- `/recruitment/candidates`
+- `/relations/contracts`
+- `/relations/disputes`
+- `/training/sessions`
+- `/training/promotions`
+- `/care/plans`
+- `/care/stats`
 
 ## Development Notes
 
-- Frontend routes are defined in [`frontend/src/router/routes.ts`](frontend/src/router/routes.ts).
-- Backend controllers live under [`backend/src/main/java/com/hrms/controller`](backend/src/main/java/com/hrms/controller).
-- Excel export is implemented with Apache POI in [`backend/src/main/java/com/hrms/util/ExcelExportUtil.java`](backend/src/main/java/com/hrms/util/ExcelExportUtil.java).
-
-## Screens and Modules
-
-The current route map includes:
-
-- `/home`
-- `/system/files`, `/system/employees`, `/system/departments`
-- `/permission/roles`, `/permission/menus`
-- `/salary/records`, `/salary/cities`, `/salary/performance`
-- `/attendance/leaves`, `/attendance/records`, `/attendance/trips`
-- `/recruitment/requirements`, `/recruitment/positions`, `/recruitment/candidates`
-- `/relations/contracts`, `/relations/disputes`
-- `/training/sessions`, `/training/promotions`
-- `/care/plans`, `/care/stats`
+- Backend entry configuration: [application.yml](./backend/src/main/resources/application.yml)
+- Frontend routes: [routes.ts](./frontend/src/router/routes.ts)
+- Excel export support: [ExcelExportUtil.java](./backend/src/main/java/com/hrms/util/ExcelExportUtil.java)
+- Docker deployment details: [DEPLOY-DOCKER.md](./DEPLOY-DOCKER.md)
