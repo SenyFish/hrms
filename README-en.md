@@ -40,7 +40,7 @@ hrms/
 |-- database/                SQL bootstrap script
 |-- docker-compose.yml       Containerized local deployment
 |-- DEPLOY-DOCKER.md         Docker deployment notes
-`-- .env.example             Compose environment template
+`-- README-en.md             English documentation
 ```
 
 ## Quick Start
@@ -112,11 +112,11 @@ The application seeds these accounts on first startup:
 
 ## Docker Compose
 
-This repository includes Dockerfiles for the frontend and backend plus a `docker-compose.yml` for MySQL, API, and web containers.
+This repository includes Dockerfiles for MySQL, the backend, and the frontend plus a `docker-compose.yml` for the full stack.
 
 ```bash
-cp .env.example .env
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Default container endpoints:
@@ -125,7 +125,7 @@ Default container endpoints:
 - backend: `http://localhost:8080`
 - mysql: `localhost:3306`
 
-If you want MySQL to import SQL automatically on first container start, place SQL files under `deploy/sql/` as described in [`DEPLOY-DOCKER.md`](DEPLOY-DOCKER.md). If you prefer the existing bootstrap script in this repo, copy [`database/init-hrms.sql`](database/init-hrms.sql) into that directory before running Compose.
+The MySQL image now includes [`database/init-hrms.sql`](database/init-hrms.sql), so the database bootstrap script is imported automatically when the MySQL data volume is empty on first startup.
 
 ## API and Auth
 

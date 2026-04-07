@@ -1,55 +1,52 @@
 services:
   mysql:
-    image: docker.1ms.run/mysql:8.0.41
+    image: ghcr.io/senyfish/hrms-mysql:dev
     container_name: hrms-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-hrms}
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: hrms
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./deploy/sql:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   backend:
-    build:
-      context: ./backend
+    image: ghcr.io/senyfish/hrms-backend:dev
     container_name: hrms-backend
     restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-hrms}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      DB_URL: jdbc:mysql://mysql:3306/hrms?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
       DB_USERNAME: root
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      JWT_SECRET: ${JWT_SECRET:-ChangeThisToAVeryLongSecretKeyForProductionUseOnly123456}
-      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-168}
-      CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:*,http://127.0.0.1:*,https://*.onefish.online}
+      DB_PASSWORD: root
+      JWT_SECRET: ChangeThisToAVeryLongSecretKeyForProductionUseOnly123456
+      JWT_EXPIRE_HOURS: "168"
+      CORS_ALLOWED_ORIGIN_PATTERNS: http://localhost:*,http://127.0.0.1:*,https://*.onefish.online
       UPLOAD_DIR: /app/uploads
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "8080:8080"
     volumes:
-      - ${UPLOADS_PATH:-./docker-data/hrms-uploads}:/app/uploads
+      - ./docker-data/hrms-uploads:/app/uploads
 
   frontend:
-    build:
-      context: ./frontend
+    image: ghcr.io/senyfish/hrms-frontend:dev
     container_name: hrms-frontend
     restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "${FRONTEND_PORT:-5173}:80"
+      - "5173:80"
 
 volumes:
   mysql_data:

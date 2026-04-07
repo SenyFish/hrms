@@ -23,6 +23,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - service: mysql
+            context: ./database
+            dockerfile: ./database/Dockerfile
+            image: hrms-mysql
           - service: backend
             context: ./backend
             dockerfile: ./backend/Dockerfile

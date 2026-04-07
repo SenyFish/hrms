@@ -3,34 +3,22 @@
 ## 目录
 
 - `docker-compose.yml`：整体编排
+- `database/Dockerfile`：MySQL 初始化镜像
 - `backend/Dockerfile`：Spring Boot 镜像
 - `frontend/Dockerfile`：前端静态站点镜像
 - `frontend/nginx.conf`：前端路由与 `/api` 反向代理
-- `.env.example`：环境变量模板
-- `deploy/sql/`：首次启动 MySQL 时自动导入的 SQL
 - `docker-data/hrms-uploads/`：容器部署时默认的宿主机附件目录
 
 ## 首次部署
 
-1. 复制环境变量模板：
+1. MySQL 镜像已内置 `database/init-hrms.sql`，在数据卷为空的首次启动时会自动初始化数据库。
+
+2. 拉取并启动容器：
 
 ```bash
-cp .env.example .env
+docker compose pull
+docker compose up -d
 ```
-
-2. 如果需要初始化数据库，把备份文件放到 `deploy/sql/` 下。
-
-例如：
-
-- `deploy/sql/hrms-8.0.sql`
-
-3. 启动容器：
-
-```bash
-docker compose up -d --build
-```
-
-当前示例默认使用 `docker.1ms.run` 作为镜像代理前缀，以降低直连 Docker Hub 失败的概率。
 
 ## 访问地址
 
