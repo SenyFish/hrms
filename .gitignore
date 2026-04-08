@@ -15,3 +15,9 @@ deploy/sql/
 .env
 docker-data/
 docs/
+/.docx_tmp
+*.docx
+/report_assets
+/tools
+doc_inspect.txt
+说明.txt
